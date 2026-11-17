@@ -1264,15 +1264,17 @@ function Guide() {
       <h2 className="section-title">{t("learn")}</h2>
       <RecordGrid records={articles} editing={editing} />
       <section className="surface power-guide-card">
-        <h2>{t("powerGuide")}</h2>
-        <dl className="power-guide">
-          {knowledge.powerLevels.map((power) => (
-            <div key={power}>
-              <dt>{power} W</dt>
-              <dd>{t(`power${power}` as MessageKey)}</dd>
-            </div>
-          ))}
-        </dl>
+        <h2 id="power-guide-title">{t("powerGuide")}</h2>
+        <div className="power-guide-viewport" role="region" aria-labelledby="power-guide-title" tabIndex={0}>
+          <dl className="power-guide">
+            {[...knowledge.powerLevels].sort((a, b) => a - b).map((power) => (
+              <div key={power} className="power-level" data-power={power}>
+                <dt>{power} W</dt>
+                <dd>{t(`power${power}` as MessageKey)}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
     </>
   );

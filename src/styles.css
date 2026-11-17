@@ -1358,20 +1358,70 @@ button.select-key:active {
   inset: auto 12px 110px;
 }
 .power-guide {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-  margin: 24px 0;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  min-width: 34rem;
+  margin: 0;
+  padding-bottom: 35px;
+  text-align: center;
+}
+.power-guide::before {
+  content: "";
+  position: absolute;
+  inset-inline: calc(100% / 12);
+  bottom: 9px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #3275cf, #2b9cbb 20%, #53a684 40%, #e4b044 60%, #e77c39 80%, #dc4149);
+}
+.power-level {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: span 2;
+  position: relative;
+  padding-inline: 5px;
+}
+.power-level::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 50%;
+  bottom: -31px;
+  width: 20px;
+  height: 20px;
+  translate: -50% 0;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--power-color);
+  box-shadow: 0 0 0 1px var(--power-color);
+}
+.power-level[data-power="100"] { --power-color: #3275cf; }
+.power-level[data-power="180"] { --power-color: #2b9cbb; }
+.power-level[data-power="300"] { --power-color: #53a684; }
+.power-level[data-power="450"] { --power-color: #e4b044; }
+.power-level[data-power="600"] { --power-color: #e77c39; }
+.power-level[data-power="800"] { --power-color: #dc4149; }
+.power-guide-viewport {
+  overflow-x: auto;
+  padding: 2px 2px 12px;
+  overscroll-behavior-x: contain;
+  scrollbar-color: var(--muted) var(--surface);
+}
+.power-guide-viewport:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 8px;
 }
 .power-guide-card {
   margin-top: 30px;
 }
 .power-guide dt {
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .power-guide dd {
-  margin: 7px 0 0;
+  margin: 5px 0 0;
   color: var(--muted);
   font-size: 18px;
 }
@@ -1533,9 +1583,6 @@ button.select-key:active {
   .control-panel {
     width: 300px;
     padding-inline: 12px;
-  }
-  .power-guide {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 350px) {
