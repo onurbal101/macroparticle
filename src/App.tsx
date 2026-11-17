@@ -42,7 +42,6 @@ import {
   List,
   Microwave,
   Monitor,
-  PanelTop,
   Search as SearchIcon,
   ShieldCheck,
   Snowflake,
@@ -578,7 +577,6 @@ function Home() {
       color: "apricot",
     },
     { key: "warm", path: "/programs/keep-warm", icon: Waves, color: "sand" },
-    { key: "other", path: "/functions/other", icon: PanelTop, color: "lilac" },
   ] as const;
   return (
     <>
