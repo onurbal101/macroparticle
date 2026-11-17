@@ -1358,22 +1358,42 @@ button.select-key:active {
   inset: auto 12px 110px;
 }
 .power-guide {
+  --power-spectrum: linear-gradient(90deg var(--power-interpolation), #358cff, #35b9d0 20%, #70c9a1 40%, #f0ca6a 60%, #ff9b65 80%, #f24555);
   position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   min-width: 34rem;
   margin: 0;
-  padding-bottom: 35px;
+  padding-bottom: 66px;
   text-align: center;
 }
 .power-guide::before {
   content: "";
   position: absolute;
-  inset-inline: calc(100% / 12);
-  bottom: 9px;
-  height: 10px;
+  inset-inline: calc(100% / 12 - 18px);
+  bottom: 12px;
+  height: 32px;
   border-radius: 999px;
-  background: linear-gradient(to right, #3275cf, #2b9cbb 20%, #53a684 40%, #e4b044 60%, #e77c39 80%, #dc4149);
+  border: 1px solid rgb(255 255 255 / 45%);
+  background:
+    linear-gradient(165deg var(--power-interpolation), rgb(255 255 255 / 28%), transparent 55%),
+    var(--power-spectrum);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 50%),
+    0 2px 5px light-dark(rgb(61 76 123 / 5%), rgb(0 0 0 / 15%));
+  z-index: 1;
+}
+.power-guide::after {
+  content: "";
+  position: absolute;
+  inset-inline: calc(100% / 12 - 18px);
+  bottom: 6px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--power-spectrum);
+  filter: blur(12px);
+  opacity: 0.25;
 }
 .power-level {
   display: grid;
@@ -1381,29 +1401,23 @@ button.select-key:active {
   grid-row: span 2;
   position: relative;
   padding-inline: 5px;
+  z-index: 2;
 }
 .power-level::after {
   content: "";
   position: absolute;
   inset-inline-start: 50%;
-  bottom: -31px;
-  width: 20px;
-  height: 20px;
+  bottom: -44px;
+  width: 2px;
+  height: 12px;
   translate: -50% 0;
-  border: 3px solid var(--surface);
-  border-radius: 50%;
-  background: var(--power-color);
-  box-shadow: 0 0 0 1px var(--power-color);
+  border-radius: 2px;
+  background: rgb(255 255 255 / 85%);
+  box-shadow: 0 1px 2px rgb(39 44 72 / 17%);
 }
-.power-level[data-power="100"] { --power-color: #3275cf; }
-.power-level[data-power="180"] { --power-color: #2b9cbb; }
-.power-level[data-power="300"] { --power-color: #53a684; }
-.power-level[data-power="450"] { --power-color: #e4b044; }
-.power-level[data-power="600"] { --power-color: #e77c39; }
-.power-level[data-power="800"] { --power-color: #dc4149; }
 .power-guide-viewport {
   overflow-x: auto;
-  padding: 2px 2px 12px;
+  padding: 2px 2px 4px;
   overscroll-behavior-x: contain;
   scrollbar-color: var(--muted) var(--surface);
 }
@@ -1413,7 +1427,24 @@ button.select-key:active {
   border-radius: 8px;
 }
 .power-guide-card {
+  --power-interpolation: ;
   margin-top: 30px;
+  border-radius: 28px;
+  border-color: light-dark(rgb(255 255 255 / 88%), rgb(222 210 255 / 15%));
+  background:
+    radial-gradient(ellipse at 12% 100% var(--power-interpolation), light-dark(rgb(83 157 255 / 12%), rgb(77 134 255 / 10%)), transparent 55%),
+    radial-gradient(ellipse at 94% 100% var(--power-interpolation), light-dark(rgb(255 133 145 / 12%), rgb(245 82 124 / 9%)), transparent 55%),
+    linear-gradient(155deg var(--power-interpolation), light-dark(rgb(255 255 255 / 90%), rgb(47 41 62 / 82%)), light-dark(rgb(255 255 255 / 60%), rgb(31 27 42 / 85%)));
+  box-shadow:
+    inset 0 1px 1px var(--glass-light),
+    0 8px 30px light-dark(rgb(49 61 95 / 5%), rgb(0 0 0 / 13%));
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+  backdrop-filter: blur(20px) saturate(135%);
+}
+@supports (background: linear-gradient(in oklab, white, black)) {
+  .power-guide-card {
+    --power-interpolation: in oklab;
+  }
 }
 .power-guide dt {
   font-size: 22px;
@@ -1424,6 +1455,16 @@ button.select-key:active {
   margin: 5px 0 0;
   color: var(--muted);
   font-size: 18px;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .power-guide-card {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .power-guide::after {
+    display: none;
+  }
 }
 .mobile-step-panel {
   display: none;
