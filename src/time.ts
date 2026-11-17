@@ -3,9 +3,10 @@ import type { ApplianceRecord, Locale } from "./data/schema";
 
 // Instants stay in UTC milliseconds. Only presentation uses the user's zone.
 export function useUtcNow() {
-  const [now, setNow] = useState(Date.now);
+  const [now, setNow] = useState(0);
   useEffect(() => {
     const refresh = () => setNow(Date.now());
+    refresh();
     const timer = window.setInterval(refresh, 1000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
@@ -17,6 +18,7 @@ export function useUtcNow() {
 }
 
 export function localClock(utc: number, locale: Locale, hour12 = false) {
+  if (utc === 0) return "--:--";
   const clock = new Intl.DateTimeFormat(locale, {
     hour: "2-digit", minute: "2-digit", hourCycle: hour12 ? "h12" : "h23",
   });

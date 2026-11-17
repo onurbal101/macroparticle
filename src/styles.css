@@ -1828,3 +1828,17 @@ button.select-key:active {
 .search-box:focus-within {
   box-shadow: 0 0 0 2px var(--accent);
 }
+@media (forced-colors: active) {
+  .search-box:focus-within {
+    outline: 2px solid Highlight;
+  }
+  .main-nav .active {
+    outline: 2px solid Highlight;
+    outline-offset: -4px;
+  }
+  .appearance-option:has(:checked),
+  .settings-choice:has(:checked) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}

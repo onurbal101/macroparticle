@@ -1,5 +1,5 @@
-import { controlById, type ApplianceRecord, type ControlAction, type Locale } from "./data/schema";
-import { messages } from "./i18n";
+import { controlById, type ApplianceRecord, type ControlAction, type Locale } from "./data/schema.ts";
+import { messages } from "./i18n.ts";
 
 export function guidedActions(record: ApplianceRecord) {
   return record.sequence.filter(({ type }) => type !== "open_door" && type !== "close_door");

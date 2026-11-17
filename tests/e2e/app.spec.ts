@@ -16,6 +16,8 @@ test("task navigation, steam hierarchy, discrete portions and highlighted contro
   await expect(
     page.getByRole("heading", { name: "Programlar", exact: true }),
   ).toBeVisible();
+  await page.getByRole("navigation").getByRole("link", { name: "Programlar", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
   await expect(page).toHaveScreenshot("home.png", {
     fullPage: true,
     animations: "disabled",

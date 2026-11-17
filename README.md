@@ -62,7 +62,7 @@ npm run build
 
 `PUBLIC_BASE_URL` must be an HTTPS origin. The script creates six SVG/PNG QR codes and decodes each at two raster sizes. The generated manifest records destinations, the data version and all 42 preset IDs. It also writes an original panel SVG. Change the origin and repeat these commands when the domain changes.
 
-To regenerate app icons, run `python3 scripts/icons.py` in a Python environment with Pillow.
+To regenerate app icons, run `npm run icons`. The icon source is in `scripts/brand.ts`. The SVG, ICO, Apple touch icon and regular and maskable PWA icons use the same drawing.
 
 ## Knowledge and source review
 
@@ -94,11 +94,23 @@ Original Samsung PDFs are kept in ignored `sources/` for local research. They ar
 
 ## Hosting
 
-The production VPS serves `dist/` from the static service in [ops](ops/). The shared Caddy proxy provides HTTPS for `macroparticle.onurbal.com`. The static service handles direct programme, simulator and settings links. Missing static assets return 404.
+The production VPS serves `dist/` from the static service in [ops](ops/). The shared Caddy proxy provides HTTPS for `macroparticle.onurbal.com`. The static service handles direct programme, simulator and settings links. Missing pages and static assets return 404. Old control and favorites URLs redirect to their current routes.
 
 HTML and the service worker use revalidation. Hashed assets use immutable caching. The service worker stays at the origin root. See [release instructions](ops/README.md).
 
 The app has no backend, accounts, analytics or runtime AI service. It provides reviewed instructions. It does not operate the appliance remotely.
+
+## Public page details
+
+`npm run build` renders each public route to HTML using the same React components as the app. The browser hydrates that HTML, then restores local preferences. Complete programme steps are in the HTML; the no-JavaScript view shows them as a list. Offline navigation uses a separate cached application shell so a cached home page cannot replace another page's initial content.
+
+Each public route has a title, description, canonical URL, Open Graph and large-image card metadata, and JSON-LD. Shared programme names include their function and code in the page title. Link preview images are generated at 1200 × 630 with the programme title, code and quantity. They are fetched only when needed and are not in the offline cache. Preview artwork uses Turkish. The `social/v1` path is a preview artwork version; change it when replacing the template so preview caches can request new images.
+
+The build also generates `sitemap.xml`, `robots.txt`, `llms.txt` and bilingual Markdown references under `/content/`. These contain public instructions and source citations. They do not contain browser notes, favorites or settings. Settings, search and error pages use `noindex`. No separate English canonical URL is declared because English is a browser preference.
+
+Check raw HTML with JavaScript disabled or with a preview crawler user agent. A JavaScript-only preview does not prove that a chat service can read metadata. The actual cards displayed by WhatsApp and Telegram can remain cached by those services after a release.
+
+Run `npm run validate:site -- https://macroparticle.onurbal.com` against the Caddy deployment to check all public HTML, preview images, Markdown, discovery files, redirects and response codes. Vite preview supports the page checks but uses an application fallback for unknown routes; it does not apply Caddy response rules.
 
 ## License
 

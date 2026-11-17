@@ -1,5 +1,5 @@
 import { z } from "zod";
-import raw from "./knowledge.json";
+import raw from "./knowledge.json" with { type: "json" };
 
 export const localizedSchema = z.object({
   tr: z.string().min(1),

@@ -37,7 +37,7 @@ import {
   ChevronLeft,
   CookingPot,
   ExternalLink,
-  Leaf,
+  WavesVertical,
   Languages,
   List,
   Microwave,
@@ -67,6 +67,7 @@ import { ProgrammeInformation } from "./components/ProgrammeInformation";
 import { Disclosure } from "./components/Disclosure";
 import { ControlPanel } from "./components/ControlPanel";
 import { Simulator } from "./components/Simulator";
+import { PageMetadata } from "./components/PageMetadata";
 import { useSimulator } from "./simulator";
 import { formatSeconds, programmeDuration } from "./time";
 
@@ -194,6 +195,7 @@ function Navigation({ onSearch }: { onSearch: () => void }) {
             aria-current={section === key ? "page" : undefined}
             onClick={(event) => {
               if (location.pathname.replace(/\/$/, "") === path ||
+                  (key === "programs" && location.pathname === "/") ||
                   (key === "simulation" && isSimulator(location.pathname))) {
                 event.preventDefault();
               }
@@ -244,7 +246,6 @@ function PageScreen({
 }) {
   const reducedMotion = useReducedMotion();
   const view = useRef<HTMLDivElement>(null);
-  const { t, locale } = useApp();
   useLayoutEffect(() => {
     window.scrollTo(0, restore ? positions.get(location.key) || 0 : 0);
     const heading = view.current?.querySelector<HTMLHeadingElement>("h1");
@@ -253,10 +254,6 @@ function PageScreen({
       positions.set(location.key, window.scrollY);
     };
   }, [location.key]);
-  useEffect(() => {
-    const title = view.current?.querySelector("h1")?.textContent || t("brand");
-    document.title = `${title} · ${t("brand")}`;
-  }, [location.key, locale]);
   return (
     <motion.div
       ref={view}
@@ -274,7 +271,7 @@ function AnimatedRoutes({ location }: { location: RouterLocation }) {
   const navigationType = useNavigationType();
   const positions = useRef(new Map<string, number>());
   const tabIndex = tabs.findIndex(({ key }) => key === sectionFor(location));
-  const historyIndex = window.history.state?.idx ?? 0;
+  const historyIndex = typeof window === "undefined" ? 0 : window.history.state?.idx ?? 0;
   const previous = useRef({ key: location.key, tabIndex, historyIndex });
   let offset = 0;
   if (previous.current.key !== location.key) {
@@ -295,7 +292,7 @@ function AnimatedRoutes({ location }: { location: RouterLocation }) {
       restore={navigationType === "POP"}
     >
       <Routes location={location}>
-        <Route path="/" element={<Navigate to="/programs" replace />} />
+        <Route path="/" element={<Home />} />
         <Route path="/programs" element={<Home />} />
         <Route path="/programs/all" element={<ProgramList />} />
         <Route path="/functions/:functionId" element={<ProgramList />} />
@@ -321,9 +318,11 @@ function AnimatedRoutes({ location }: { location: RouterLocation }) {
 function SearchSheet({
   dialog,
   input,
+  onDismiss,
 }: {
   dialog: RefObject<HTMLDialogElement | null>;
   input: RefObject<HTMLInputElement | null>;
+  onDismiss: () => void;
 }) {
   const { t, locale } = useApp();
   const location = useLocation();
@@ -375,6 +374,7 @@ function SearchSheet({
       onClose={() => {
         setEditing(false);
         if (locationRef.current.pathname !== "/search") return;
+        onDismiss();
         if (
           (locationRef.current.state as NavigationState | null)?.background &&
           (window.history.state?.idx ?? 0) > 0
@@ -412,7 +412,7 @@ function SearchSheet({
                 input.current?.focus();
               }}
             >
-              <X size={19} />
+              <X size={19} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -425,12 +425,15 @@ function SearchSheet({
           {t("cancel")}
         </button>
       </form>
+      <p className="sr-only" role="status" aria-atomic="true">
+        {deferredQuery && query === deferredQuery ? `${results.length} ${locale === "tr" ? "sonuç" : "results"}` : ""}
+      </p>
       <div className="search-results" aria-busy={query !== deferredQuery}>
         {deferredQuery && !results.length && (
           <p className="empty-state">{t("noResults")}</p>
         )}
         {results.length > 0 && (
-          <ul className="menu-list">
+          <ul className="menu-list" role="list">
             {results.map((result) => {
               const content = <>
                 {result.code ? (
@@ -459,21 +462,34 @@ function SearchSheet({
 }
 
 export default function App() {
-  const [preferences, setPreferences] = useState(() => {
+  const [preferences, setPreferences] = useState(() => parsePreferences(null));
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  useLayoutEffect(() => {
     try {
-      return parsePreferences(localStorage.getItem(storageKey));
+      setPreferences(parsePreferences(localStorage.getItem(storageKey)));
     } catch {
-      return parsePreferences(null);
+      setPreferences(parsePreferences(null));
     }
-  });
+    setPreferencesLoaded(true);
+  }, []);
   const [storageError, setStorageError] = useState(false);
   const locale = preferences.locale;
   const t = (key: MessageKey) => messages[locale][key];
   const machine = useSimulator();
   useLayoutEffect(() => {
+    if (!preferencesLoaded) return;
     const scheme = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
     if (scheme) scheme.content = preferences.theme === "system" ? "light dark" : preferences.theme;
-  }, [preferences.theme]);
+    const system = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateColor = () => {
+      const dark = preferences.theme === "dark" || (preferences.theme === "system" && system.matches);
+      const color = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+      if (color) color.content = dark ? "#141319" : "#f2f2f7";
+    };
+    updateColor();
+    system.addEventListener("change", updateColor);
+    return () => system.removeEventListener("change", updateColor);
+  }, [preferences.theme, preferencesLoaded]);
   useEffect(() => {
     const syncPreferences = (event: StorageEvent) => {
       if (event.storageArea !== localStorage || (event.key !== storageKey && event.key !== null)) return;
@@ -484,16 +500,24 @@ export default function App() {
   }, []);
   useEffect(() => {
     document.documentElement.lang = locale;
+    if (!preferencesLoaded) return;
     try {
       localStorage.setItem(storageKey, JSON.stringify(preferences));
     } catch {
       setStorageError(true);
     }
-  }, [preferences, locale]);
+  }, [preferences, locale, preferencesLoaded]);
   const location = useLocation();
   const navigate = useNavigate();
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const restoreSearchFocus = useRef(false);
+  useLayoutEffect(() => {
+    if (location.pathname !== "/search" && restoreSearchFocus.current) {
+      restoreSearchFocus.current = false;
+      document.querySelector<HTMLButtonElement>(".floating-search")?.focus({ preventScroll: true });
+    }
+  }, [location.key]);
   const state = location.state as NavigationState | null;
   const background =
     location.pathname === "/search"
@@ -509,6 +533,7 @@ export default function App() {
     <Context.Provider
       value={{ locale, t, preferences, change: setPreferences, machine }}
     >
+      <PageMetadata locale={locale} />
       <MotionConfig reducedMotion="user">
         <a className="skip-link" href="#content">
           {t("skip")}
@@ -532,7 +557,7 @@ export default function App() {
                 });
             }}
           />
-          <SearchSheet dialog={dialog} input={input} />
+          <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
           <UpdateNotice />
         </div>
       </MotionConfig>
@@ -567,7 +592,7 @@ function Home() {
     {
       key: "steam",
       path: "/functions/healthy-steam",
-      icon: Leaf,
+      icon: WavesVertical,
       color: "green",
     },
     {
@@ -581,7 +606,7 @@ function Home() {
   return (
     <>
       <PageHeading title={t("programs")} />
-      <ul className="menu-list task-list">
+      <ul className="menu-list task-list" role="list">
         {tasks.map(({ key, path, icon: Icon, color }) => (
           <li key={key}>
             <Link className="task-row" to={path}>
@@ -679,7 +704,7 @@ function FavoriteRow({ id, path, className, name, editing, children }: {
 }
 
 const recordIcons = {
-  "healthy-steam": Leaf,
+  "healthy-steam": WavesVertical,
   "auto-cook": CookingPot,
   "quick-defrost": Snowflake,
   microwave: Microwave,
@@ -697,7 +722,7 @@ function RecordGrid({
 }) {
   const { locale } = useApp();
   return (
-    <ul className="menu-list record-list">
+    <ul className="menu-list record-list" role="list">
       {records.map((record) => {
         const Icon = recordIcons[record.function];
         const Label = editing ? "span" : Heading;
@@ -707,7 +732,7 @@ function RecordGrid({
             className="record-row"
             id={record.id}
             path={`/programs/${record.id}`}
-            name={record.title[locale]}
+            name={`${record.code ? `${record.code} · ` : ""}${record.title[locale]}`}
             editing={editing}
           >
             {record.code ? (
@@ -795,10 +820,10 @@ function Account() {
   return (
     <div className="account-settings">
       <PageHeading title={t("account")} />
-      <ul className="menu-list settings-list">
+      <ul className="menu-list settings-list" role="list">
         <SettingsLink to="/account/favorites" label={t("favorites")} icon={Star} color="gold" />
       </ul>
-      <ul className="menu-list settings-list">
+      <ul className="menu-list settings-list" role="list">
         <SettingsLink to="/account/appearance" label={t("appearance")} value={t(preferences.theme)} icon={Monitor} color="indigo" />
         <SettingsLink to="/account/language" label={t("language")} value={languageNames[locale]} icon={Languages} color="blue" />
       </ul>
@@ -916,7 +941,7 @@ function SourceDetails({ record }: { record: ApplianceRecord }) {
                 </small>
               )}
             </span>
-            <ExternalLink size={18} />
+            <ExternalLink size={18} aria-hidden="true" />
           </a>
         );
       })}
@@ -1072,7 +1097,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
           {record.warnings.length > 0 && (
             <section className="safety-notice">
               <h2>
-                <ShieldCheck size={19} />
+                <ShieldCheck size={19} aria-hidden="true" />
                 {t("caution")}
               </h2>
               {record.warnings.map((text, index) => (
@@ -1105,11 +1130,11 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                   <span key={index} className={index <= step ? "done" : ""} />
                 ))}
               </div>
-              <ol className={`steps ${compact ? "compact-steps" : ""}`}>
+              <ol className={`steps ${compact ? "compact-steps" : ""}`} role="list">
                 {actions.map(
                   (action, index) =>
-                    (compact || index === step) && (
-                      <li key={index} value={index + 1} aria-current={index === step ? "step" : undefined}>
+                    (
+                      <li key={index} value={index + 1} hidden={!compact && index !== step} aria-current={index === step ? "step" : undefined}>
                         <div className="step-content">
                           {compact && <span className="step-number" aria-hidden="true">{index + 1}</span>}
                           <span>
@@ -1156,7 +1181,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                   disabled={step === 0}
                   onClick={() => setStep(step - 1)}
                 >
-                  <ArrowLeft size={16} />
+                  <ArrowLeft size={16} aria-hidden="true" />
                   {t("previous")}
                 </button>
                 <button
@@ -1169,7 +1194,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                   onClick={() => setStep(step + 1)}
                 >
                   {t("next")}
-                  <ArrowRight size={16} />
+                  <ArrowRight size={16} aria-hidden="true" />
                 </button>
               </div>
             </section>
@@ -1194,7 +1219,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
               {record.automatic && (
                 <Link className="text-link" to="/programs/completion">
                   {recordById.get("completion")!.title[locale]}
-                  <ChevronRight size={16} />
+                  <ChevronRight size={16} aria-hidden="true" />
                 </Link>
               )}
             </section>
@@ -1237,6 +1262,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
 function SimulationPage() {
   const { controlId } = useParams();
   const { locale, t, machine } = useApp();
+  if (controlId && !controlById.has(controlId)) return <NotFound />;
   return (
     <>
       <PageHeading title={t("simulation")} />

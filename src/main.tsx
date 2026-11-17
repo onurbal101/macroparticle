@@ -12,10 +12,17 @@ import "@fontsource/dm-sans/latin-ext-700.css";
 import App from "./App";
 import "./styles.css";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const application = (
   <React.StrictMode>
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
+const root = document.getElementById("root")!;
+const path = window.location.pathname.replace(/\/+$/, "") || "/";
+if (root.hasChildNodes() && root.dataset.page === path) {
+  ReactDOM.hydrateRoot(root, application);
+} else {
+  ReactDOM.createRoot(root).render(application);
+}

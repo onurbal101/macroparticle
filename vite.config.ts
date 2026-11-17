@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { staticPages } from "./scripts/pages.ts";
 
 export default defineConfig({
   build: {
@@ -22,15 +23,19 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    staticPages(),
     VitePWA({
       registerType: "prompt",
       includeAssets: [
         "icons/*.png",
+        "favicon.svg",
+        "favicon.ico",
         "print/*.pdf",
         "print/*.svg",
         "print/manifest.json",
       ],
       manifest: {
+        id: "/",
         name: "Mikrodalga Rehberi · MS23K3555ES",
         short_name: "Mikrodalga",
         description: "Samsung MS23K3555ES/ND için çevrimdışı kullanım rehberi.",
@@ -38,8 +43,14 @@ export default defineConfig({
         start_url: "/",
         scope: "/",
         display: "standalone",
-        theme_color: "#345247",
-        background_color: "#f7f8f4",
+        theme_color: "#f2f2f7",
+        background_color: "#f2f2f7",
+        categories: ["food", "utilities", "education"],
+        shortcuts: [
+          { name: "Programlar", url: "/programs", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+          { name: "Simülasyon", url: "/simulation", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+          { name: "Rehber", url: "/guide", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+        ],
         icons: [
           { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
           {
@@ -57,8 +68,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,woff2,png,svg,pdf,json}"],
-        navigateFallback: "/index.html",
+        globPatterns: ["**/*.{js,css,woff2,png,svg,pdf,json,ico}", "app.html"],
+        globIgnores: ["social/**"],
+        navigateFallback: "/app.html",
+        navigateFallbackDenylist: [/^\/(?:assets|icons|social|content|print)\//, /\.(?:txt|xml|json|svg|png|ico|webmanifest)$/],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
       },
