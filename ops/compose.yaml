@@ -5,6 +5,8 @@ services:
     read_only: true
     restart: unless-stopped
     cap_drop: [ALL]
+    # The packaged Caddy binary carries this file capability.
+    cap_add: [NET_BIND_SERVICE]
     security_opt: [no-new-privileges:true]
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
