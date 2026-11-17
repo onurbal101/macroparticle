@@ -1,0 +1,112 @@
+{
+  "generated": "2026-11-17T20:09:07.004Z",
+  "baseUrl": "https://macroparticle.onurbal.com",
+  "knowledgeVersion": "2026.11.17-1",
+  "knowledgeHash": "984e3be1d261b194a03313e45a96ef4cd18e5a285dab2a58aff9a1e56ab17be8",
+  "qrCodes": [
+    {
+      "id": "home",
+      "path": "/",
+      "url": "https://macroparticle.onurbal.com/",
+      "decodedAt": [
+        600,
+        220
+      ]
+    },
+    {
+      "id": "programs",
+      "path": "/programs",
+      "url": "https://macroparticle.onurbal.com/programs",
+      "decodedAt": [
+        600,
+        220
+      ]
+    },
+    {
+      "id": "controls",
+      "path": "/controls",
+      "url": "https://macroparticle.onurbal.com/controls",
+      "decodedAt": [
+        600,
+        220
+      ]
+    },
+    {
+      "id": "healthy-steam",
+      "path": "/functions/healthy-steam",
+      "url": "https://macroparticle.onurbal.com/functions/healthy-steam",
+      "decodedAt": [
+        600,
+        220
+      ]
+    },
+    {
+      "id": "auto-cook",
+      "path": "/functions/auto-cook",
+      "url": "https://macroparticle.onurbal.com/functions/auto-cook",
+      "decodedAt": [
+        600,
+        220
+      ]
+    },
+    {
+      "id": "quick-defrost",
+      "path": "/functions/quick-defrost",
+      "url": "https://macroparticle.onurbal.com/functions/quick-defrost",
+      "decodedAt": [
+        600,
+        220
+      ]
+    }
+  ],
+  "remoteAvailability": "not checked during generation",
+  "presetIds": [
+    "steam-1-1",
+    "steam-1-2",
+    "steam-1-3",
+    "steam-1-4",
+    "steam-1-5",
+    "steam-1-6",
+    "steam-1-7",
+    "steam-1-8",
+    "steam-1-9",
+    "steam-1-10",
+    "steam-1-11",
+    "steam-2-1",
+    "steam-2-2",
+    "steam-2-3",
+    "steam-2-4",
+    "steam-2-5",
+    "steam-2-6",
+    "auto-1",
+    "auto-2",
+    "auto-3",
+    "auto-4",
+    "auto-5",
+    "auto-6",
+    "auto-7",
+    "auto-8",
+    "auto-9",
+    "auto-10",
+    "auto-11",
+    "auto-12",
+    "auto-13",
+    "auto-14",
+    "auto-15",
+    "auto-16",
+    "auto-17",
+    "auto-18",
+    "auto-19",
+    "auto-20",
+    "defrost-1",
+    "defrost-2",
+    "defrost-3",
+    "defrost-4",
+    "defrost-5"
+  ],
+  "files": [
+    "everyday-card.pdf",
+    "preset-index.pdf",
+    "button-legend.pdf"
+  ]
+}
