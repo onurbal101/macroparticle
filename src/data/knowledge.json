@@ -1,6 +1,8 @@
 {
   "version": "2026.11.17-1",
   "reviewed": "2026-11-17",
+  "brand": "Samsung",
+  "shortBrand": "Sams.",
   "model": "MS23K3555ES/ND",
   "publicBaseUrl": "https://macroparticle.onurbal.com",
   "sources": [

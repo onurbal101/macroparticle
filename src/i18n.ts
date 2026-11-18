@@ -1,3 +1,7 @@
+import { knowledge } from "./data/schema.ts";
+
+const modelName = `${knowledge.brand} ${knowledge.model}`;
+
 export const messages = {
   tr: {
     brand: "Mikrodalga Rehberi",
@@ -31,7 +35,7 @@ export const messages = {
     noResults: "Sonuç bulunamadı. Başka bir sözcük deneyin.",
     taskTitle: "Ne yapmak istiyorsun?",
     intro: "Yemeğini seç. Hazırlığı gör. Doğru düğmeye bas.",
-    model: "Samsung MS23K3555ES/ND",
+    model: modelName,
     heat: "Yemek ısıt",
     defrost: "Buz çöz",
     cook: "Yemek pişir",
@@ -222,7 +226,7 @@ export const messages = {
     noResults: "No results. Try another word.",
     taskTitle: "What would you like to do?",
     intro: "Choose your food. Check the preparation. Follow the controls.",
-    model: "Samsung MS23K3555ES/ND",
+    model: modelName,
     heat: "Reheat food",
     defrost: "Defrost",
     cook: "Cook a meal",

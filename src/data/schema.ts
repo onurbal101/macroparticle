@@ -103,6 +103,8 @@ export const knowledgeSchema = z
   .object({
     version: z.string(),
     reviewed: z.string(),
+    brand: z.string().min(1),
+    shortBrand: z.string().min(1).optional(),
     model: z.string(),
     publicBaseUrl: z.url(),
     sources: z.array(

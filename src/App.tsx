@@ -933,23 +933,37 @@ const languageNames: Record<Locale, string> = { tr: "Türkçe", en: "English" };
 
 function ModelValue({ value }: { value: string }) {
   const container = useRef<HTMLSpanElement>(null);
+  const [display, setDisplay] = useState(value);
+  const alternatives = useMemo(() => {
+    const { brand, shortBrand = brand, model } = knowledge;
+    const characters = Array.from(model);
+    return Array.from({ length: Math.max(0, characters.length - 4) }, (_, index) =>
+      `${shortBrand} ${characters.slice(0, characters.length - index - 1).join("").replace(/[\s/.-]+$/, "")}.`,
+    );
+  }, []);
   useLayoutEffect(() => {
     const element = container.current;
     if (!element) return;
+    const options = Array.from(element.querySelectorAll<HTMLElement>(".model-measure"));
     const measure = () => {
-      const full = element.querySelector<HTMLElement>(".model-full")!;
-      element.toggleAttribute("data-short", full.scrollWidth > element.clientWidth);
+      const available = element.getBoundingClientRect().width;
+      const fitting = options.find(option => option.getBoundingClientRect().width <= available);
+      setDisplay(fitting?.textContent ?? alternatives.at(-1) ?? value);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(element);
-    observer.observe(element.querySelector(".model-full")!);
+    for (const option of options) observer.observe(option);
     measure();
     return () => observer.disconnect();
-  }, [value]);
+  }, [alternatives, value]);
   return (
-    <span ref={container} className="settings-value model-value" aria-label={value}>
-      <span className="model-full" aria-hidden="true">{value}</span>
-      <span className="model-short" aria-hidden="true">Sams. MS23.</span>
+    <span ref={container} className="settings-value model-value">
+      <span className="sr-only">{value}</span>
+      <span className="model-measure" aria-hidden="true">{value}</span>
+      {alternatives.map((option, index) => (
+        <span key={index} className="model-measure model-alternative" aria-hidden="true">{option}</span>
+      ))}
+      <span className="model-display" aria-hidden="true">{display}</span>
     </span>
   );
 }

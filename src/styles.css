@@ -762,20 +762,20 @@ p {
   position: relative;
   width: max-content;
 }
-.model-full {
+.model-measure {
   display: block;
   width: max-content;
-}
-.model-short {
-  display: none;
-}
-.model-value[data-short] .model-full {
   visibility: hidden;
 }
-.model-value[data-short] .model-short {
+.model-alternative,
+.model-display {
   display: block;
   position: absolute;
   inset: 0;
+}
+.model-display {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .settings-icon {
   display: grid;
