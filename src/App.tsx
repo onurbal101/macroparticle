@@ -83,6 +83,8 @@ type AppContext = {
   locale: Locale;
   t: (key: MessageKey) => string;
   preferences: Preferences;
+  systemIsDark: boolean | null;
+  systemReducesMotion: boolean | null;
   change: (update: (previous: Preferences) => Preferences) => void;
   machine: ReturnType<typeof useSimulator>;
 };
@@ -466,8 +468,9 @@ export default function App() {
   const locale = preferences.locale;
   const t = (key: MessageKey) => messages[locale][key];
   const machine = useSimulator();
-  const systemReducesMotion = useSyncExternalStore(subscribeToSystemMotion, getSystemMotion, () => false);
-  const reduceMotion = preferences.reduceMotion === "on" || (preferences.reduceMotion === "system" && systemReducesMotion);
+  const systemReducesMotion = useSyncExternalStore(subscribeToSystemMotion, getSystemMotion, () => null);
+  const [systemIsDark, setSystemIsDark] = useState<boolean | null>(null);
+  const reduceMotion = preferences.reduceMotion === "on" || (preferences.reduceMotion === "system" && systemReducesMotion === true);
   useLayoutEffect(() => {
     if (preferencesLoaded) document.documentElement.dataset.reduceMotion = preferences.reduceMotion;
   }, [preferences.reduceMotion, preferencesLoaded]);
@@ -477,6 +480,7 @@ export default function App() {
     if (scheme) scheme.content = preferences.theme === "system" ? "light dark" : preferences.theme;
     const system = window.matchMedia("(prefers-color-scheme: dark)");
     const updateColor = () => {
+      setSystemIsDark(system.matches);
       const dark = preferences.theme === "dark" || (preferences.theme === "system" && system.matches);
       const color = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
       if (color) color.content = dark ? "#141319" : "#f2f2f7";
@@ -543,7 +547,7 @@ export default function App() {
       : location;
   return (
     <Context.Provider
-      value={{ locale, t, preferences, change: setPreferences, machine }}
+      value={{ locale, t, preferences, systemIsDark, systemReducesMotion, change: setPreferences, machine }}
     >
       <PageMetadata locale={locale} />
       <MotionConfig reducedMotion={reduceMotion ? "always" : "never"}>
@@ -887,7 +891,8 @@ function Favorites() {
 }
 
 function AppearanceSettings() {
-  const { t, preferences, change } = useApp();
+  const { t, preferences, systemIsDark, change } = useApp();
+  const currentTheme = preferences.theme === "system" && systemIsDark !== null ? t(systemIsDark ? "dark" : "light") : null;
   return (
     <div className="account-settings">
       <MenuBack fallback="/account" />
@@ -900,6 +905,8 @@ function AppearanceSettings() {
               type="radio"
               name="appearance"
               checked={preferences.theme === theme}
+              aria-labelledby={theme === "system" ? "system-appearance-label" : undefined}
+              aria-describedby={theme === "system" && currentTheme ? "system-appearance-status" : undefined}
               onChange={() => change((previous) => ({ ...previous, theme }))}
             />
             <span className="appearance-preview" data-preview={theme} aria-hidden="true">
@@ -907,7 +914,12 @@ function AppearanceSettings() {
               <span className="preview-list"><span /><span /><span /></span>
               <span className="preview-dock" />
             </span>
-            <span>{t(theme)}</span>
+            <span className="settings-option-label">
+              <span id={theme === "system" ? "system-appearance-label" : undefined}>{t(theme)}</span>
+              {theme === "system" && currentTheme && (
+                <span id="system-appearance-status" className="settings-current" role="status">{t("currentSetting")}: {currentTheme}</span>
+              )}
+            </span>
             <span className="appearance-check" aria-hidden="true"><Check size={15} strokeWidth={3} /></span>
           </label>
         ))}
@@ -946,7 +958,9 @@ function LanguageSettings() {
 }
 
 function MotionSettings() {
-  const { t, preferences, change } = useApp();
+  const { t, preferences, systemReducesMotion, change } = useApp();
+  const currentMotion = preferences.reduceMotion === "system" && systemReducesMotion !== null
+    ? t(systemReducesMotion ? "motionOn" : "motionOff") : null;
   return (
     <div className="account-settings">
       <MenuBack fallback="/account" />
@@ -961,9 +975,16 @@ function MotionSettings() {
                   type="radio"
                   name="reduce-motion"
                   checked={preferences.reduceMotion === value}
+                  aria-labelledby={value === "system" ? "system-motion-label" : undefined}
+                  aria-describedby={value === "system" && currentMotion ? "system-motion-status" : undefined}
                   onChange={() => change(previous => ({ ...previous, reduceMotion: value }))}
                 />
-                <span>{t(motionLabels[value])}</span>
+                <span className="settings-option-label">
+                  <span id={value === "system" ? "system-motion-label" : undefined}>{t(motionLabels[value])}</span>
+                  {value === "system" && currentMotion && (
+                    <span id="system-motion-status" className="settings-current" role="status">{t("currentSetting")}: {currentMotion}</span>
+                  )}
+                </span>
                 <Check size={21} strokeWidth={2.5} aria-hidden="true" />
               </label>
             </li>

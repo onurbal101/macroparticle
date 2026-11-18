@@ -57,8 +57,10 @@ test("Reduce Motion follows the device and saves explicit choices", async ({ pag
   const system = page.getByRole("radio", { name: "Sistem", exact: true });
   const searchBlur = page.locator(".search-backdrop");
   await expect(system).toBeChecked();
+  await expect(system).toHaveAccessibleDescription("Şu an: Açık");
   await expect(searchBlur).toHaveCSS("transition-property", "none");
   await page.getByRole("radio", { name: "Kapalı", exact: true }).press("Space");
+  await expect(page.locator("#system-motion-status")).toHaveCount(0);
   await expect(searchBlur).toHaveCSS("transition-property", "opacity, visibility");
 
   await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -69,9 +71,25 @@ test("Reduce Motion follows the device and saves explicit choices", async ({ pag
   await expect(searchBlur).toHaveCSS("transition-property", "none");
 
   await system.press("Space");
+  await expect(system).toHaveAccessibleDescription("Şu an: Kapalı");
   await expect(searchBlur).toHaveCSS("transition-property", "opacity, visibility");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(searchBlur).toHaveCSS("transition-property", "none");
+  await expect(system).toHaveAccessibleDescription("Şu an: Açık");
+  await expect(system).toBeChecked();
+});
+
+test("System appearance shows the current device theme without changing the choice", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/account/appearance");
+  const system = page.getByRole("radio", { name: "Sistem", exact: true });
+  await expect(system).toHaveAccessibleDescription("Şu an: Açık");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(system).toHaveAccessibleDescription("Şu an: Koyu");
+  await expect(system).toBeChecked();
+  await page.getByRole("radio", { name: "Açık", exact: true }).press("Space");
+  await expect(page.locator("#system-appearance-status")).toHaveCount(0);
+  await expect(page.locator('meta[name="color-scheme"]')).toHaveAttribute("content", "light");
 });
 
 test("the navigation indicator moves only when the selected tab changes", async ({ page }) => {
