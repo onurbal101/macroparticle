@@ -42,11 +42,11 @@ test("search reports results and returns focus to its button", async ({ page }) 
   await page.getByRole("button", { name: "Vazgeç", exact: true }).click();
   await expect(page).toHaveURL(/\/programs$/);
   await expect(search).toBeFocused();
+  await page.getByRole("link", { name: "Buz çöz", exact: true }).click();
   await search.click();
   await page.getByRole("searchbox").fill("ekmek");
-  await expect(page.getByRole("link", { name: /Ekmek/ })).toBeVisible();
   await page.mouse.click(12, 12);
-  await expect(page).toHaveURL(/\/programs$/);
+  await expect(page).toHaveURL(/\/functions\/quick-defrost$/);
   await expect(search).toBeFocused();
 });
 

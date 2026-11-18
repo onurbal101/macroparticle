@@ -11,6 +11,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { flushSync } from "react-dom";
 import {
   MotionConfig,
   LazyMotion,
@@ -273,12 +274,15 @@ function SearchSheet({
   const canEdit = results.some((result) => result.kind !== "control");
   const locationRef = useRef(location);
   locationRef.current = location;
-  useEffect(() => {
-    if (location.pathname === "/search" && !dialog.current?.open)
-      dialog.current?.showModal();
-    else if (location.pathname !== "/search" && dialog.current?.open)
-      dialog.current.close();
-  }, [location.pathname]);
+  useLayoutEffect(() => {
+    const sheet = dialog.current;
+    if (location.pathname === "/search" && sheet && !sheet.open) {
+      sheet.showModal();
+      input.current?.focus({ preventScroll: true });
+    } else if (location.pathname !== "/search" && sheet?.open) {
+      sheet.close();
+    }
+  }, [location.pathname, dialog, input]);
   useLayoutEffect(() => {
     const viewport = window.visualViewport;
     const sheet = dialog.current;
@@ -472,10 +476,10 @@ export default function App() {
   }, []);
   const openSearch = useCallback(() => {
     const { location, navigate } = navigation.current;
-    if (!dialog.current?.open) dialog.current?.showModal();
-    input.current?.focus({ preventScroll: true });
-    if (location.pathname !== "/search") navigate("/search", {
-      state: { background: location, tab: sectionFor(location) },
+    if (location.pathname === "/search") return;
+    // Commit the route and focus the input within the user's tap.
+    flushSync(() => {
+      navigate("/search", { state: { background: location, tab: sectionFor(location) } });
     });
   }, []);
   const restoreSearchFocus = useRef(false);

@@ -14,7 +14,7 @@ import "./styles.css";
 
 const application = (
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter useTransitions={false}>
       <App />
     </BrowserRouter>
   </React.StrictMode>
