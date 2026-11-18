@@ -42,6 +42,7 @@ import {
   ChevronLeft,
   CookingPot,
   ExternalLink,
+  Fan,
   WavesVertical,
   Languages,
   Microwave,
@@ -76,6 +77,7 @@ import { UpdateDialog } from "./components/UpdateDialog";
 import { Navigation, tabs, type Section } from "./components/Navigation";
 import { useSimulator } from "./simulator";
 import { formatSeconds, programmeDuration } from "./time";
+import { isGuideFeature, recordParentPath } from "./site";
 
 type AppContext = {
   locale: Locale;
@@ -544,45 +546,46 @@ function PageHeading({ title, action }: { title: string; action?: ReactNode }) {
 }
 
 function Home() {
-  const { t } = useApp();
+  const { t, locale } = useApp();
   const tasks = [
     {
-      key: "defrost",
+      label: t("defrost"),
       path: "/functions/quick-defrost",
       icon: Snowflake,
       color: "blue",
     },
     {
-      key: "cook",
+      label: t("cook"),
       path: "/functions/auto-cook",
       icon: CookingPot,
       color: "rose",
     },
     {
-      key: "steam",
+      label: t("steam"),
       path: "/functions/healthy-steam",
       icon: WavesVertical,
       color: "green",
     },
     {
-      key: "heat",
+      label: t("heat"),
       path: "/functions/microwave",
       icon: Microwave,
       color: "apricot",
     },
-    { key: "warm", path: "/programs/keep-warm", icon: Waves, color: "sand" },
+    { label: t("warm"), path: "/programs/keep-warm", icon: Waves, color: "sand" },
+    { label: recordById.get("deodorization")!.title[locale], path: "/programs/deodorization", icon: Fan, color: "lilac" },
   ] as const;
   return (
     <>
       <PageHeading title={t("programs")} />
       <ul className="menu-list task-list" role="list">
-        {tasks.map(({ key, path, icon: Icon, color }) => (
-          <li key={key}>
+        {tasks.map(({ label, path, icon: Icon, color }) => (
+          <li key={path}>
             <Link className="task-row" to={path}>
               <span className={`task-icon ${color}`}>
                 <Icon size={28} strokeWidth={1.8} aria-hidden="true" />
               </span>
-              <h2>{t(key)}</h2>
+              <h2>{label}</h2>
             </Link>
           </li>
         ))}
@@ -708,7 +711,7 @@ function RecordGrid({
   return (
     <ul className="menu-list record-list" role="list">
       {records.map((record) => {
-        const Icon = recordIcons[record.function];
+        const Icon = record.id === "deodorization" ? Fan : recordIcons[record.function];
         const Label = editing ? "span" : Heading;
         return (
           <FavoriteRow
@@ -1019,13 +1022,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
   const heading = record.title[locale];
   return (
     <>
-      <MenuBack
-        fallback={
-          record.kind === "article" || record.function === "other"
-            ? "/guide"
-            : `/functions/${record.function}`
-        }
-      />
+      <MenuBack fallback={recordParentPath(record)} />
       <div className="instruction-heading">
         {record.code && <span className="detail-number">{record.code}</span>}
         <PageHeading title={heading} />
@@ -1291,9 +1288,7 @@ function Guide() {
   const articles = knowledge.records.filter(
     (record) => record.kind === "article",
   );
-  const features = knowledge.records.filter(
-    (record) => record.kind === "function",
-  );
+  const features = knowledge.records.filter(isGuideFeature);
   return (
     <>
       <PageHeading title={t("guide")} action={<FavoriteModeButton editing={editing} onToggle={() => setEditing(!editing)} />} />

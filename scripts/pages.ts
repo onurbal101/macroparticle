@@ -4,7 +4,7 @@ import { knowledge, quantityText, type Locale } from "../src/data/schema.ts";
 import { guidedActions, instructionText } from "../src/instructions.ts";
 import { messages } from "../src/i18n.ts";
 import { formatSeconds } from "../src/time.ts";
-import { markdownPath, metadataFor, pageFor, publicPages, siteName, siteUrl, socialImagePath, structuredData, type SitePage } from "../src/site.ts";
+import { isGuideFeature, markdownPath, metadataFor, pageFor, publicPages, siteName, siteUrl, socialImagePath, structuredData, type SitePage } from "../src/site.ts";
 import { escapeXml, png, shareSvg } from "./brand.ts";
 
 export function pageHead(page: SitePage) {
@@ -52,10 +52,10 @@ function markdown(page: SitePage) {
       lines.push(`## ${control.hardware}`, "", control.summary.tr, "", control.summary.en, "");
   } else {
     let linked = publicPages().filter(item => item.kind === "record");
-    if (page.kind === "home") linked = ["/functions/quick-defrost", "/functions/auto-cook", "/functions/healthy-steam", "/functions/microwave", "/programs/keep-warm", "/simulation", "/guide"].map(path => pageFor(path));
+    if (page.kind === "home") linked = ["/functions/quick-defrost", "/functions/auto-cook", "/functions/healthy-steam", "/functions/microwave", "/programs/keep-warm", "/programs/deodorization", "/simulation", "/guide"].map(path => pageFor(path));
     if (page.kind === "category" && !page.functionId) linked = linked.filter(item => item.record!.kind !== "article");
     if (page.functionId) linked = linked.filter(item => item.functionId === page.functionId && item.record!.kind !== "article");
-    if (page.kind === "guide") linked = linked.filter(item => item.record!.kind === "article" || item.record!.kind === "function");
+    if (page.kind === "guide") linked = linked.filter(item => item.record!.kind === "article" || isGuideFeature(item.record!));
     lines.push(...linked.map(item => `- [${item.record?.code ? `${item.record.code} · ` : ""}${item.heading}](${siteUrl + item.canonicalPath}) · [Markdown](${siteUrl + markdownPath(item)})`));
     if (page.kind === "guide") lines.push("", "## Güç seviyeleri / Power levels", "", ...[...knowledge.powerLevels].sort((a, b) => a - b).map(power => `${power} W · ${messages.tr[`power${power}` as keyof typeof messages.tr]} / ${messages.en[`power${power}` as keyof typeof messages.en]}`));
   }

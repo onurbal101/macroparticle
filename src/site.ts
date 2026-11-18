@@ -5,6 +5,19 @@ export const siteUrl = new URL(knowledge.publicBaseUrl).origin;
 export const siteName = messages.tr.brand;
 export const functionIds = ["quick-defrost", "auto-cook", "healthy-steam", "microwave", "keep-warm", "other"] as const;
 export type FunctionId = (typeof functionIds)[number];
+
+const directPrograms = new Set(["keep-warm", "deodorization"]);
+
+export function isGuideFeature(record: ApplianceRecord) {
+  return record.kind === "function" && !directPrograms.has(record.id);
+}
+
+export function recordParentPath(record: ApplianceRecord) {
+  if (directPrograms.has(record.id)) return "/programs";
+  if (record.kind === "article" || record.function === "other") return "/guide";
+  return `/functions/${record.function}`;
+}
+
 export type SitePage = {
   path: string;
   canonicalPath: string;
@@ -158,8 +171,8 @@ export function structuredData(page: SitePage, locale: Locale = "tr") {
   if (page.canonicalPath !== "/") {
     const crumbs: { name: string; item: string }[] = [{ name: t.programs, item: siteUrl + "/" }];
     if (page.record) {
-      const guide = page.record.function === "other" || page.record.kind === "article";
-      crumbs.push({ name: guide ? t.guide : t[page.record.function], item: siteUrl + (guide ? "/guide" : `/functions/${page.record.function}`) });
+      const parent = recordParentPath(page.record);
+      if (parent !== "/programs") crumbs.push({ name: parent === "/guide" ? t.guide : t[page.record.function], item: siteUrl + parent });
     }
     crumbs.push({ name: page.heading, item: url });
     graph.push({ "@type": "BreadcrumbList", itemListElement: crumbs.map((crumb, index) => ({ "@type": "ListItem", position: index + 1, ...crumb })) });
