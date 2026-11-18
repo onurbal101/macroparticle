@@ -8,9 +8,12 @@ export type FunctionId = (typeof functionIds)[number];
 
 const directPrograms = new Set(["keep-warm", "deodorization"]);
 
-export function isGuideFeature(record: ApplianceRecord) {
-  return record.kind === "function" && !directPrograms.has(record.id);
-}
+export const guideSections = [
+  { label: "guideOperation", ids: ["quick-start", "adjust-time", "pause-stop"] },
+  { label: "guideDisplay", ids: ["clock", "eco"] },
+  { label: "guideMemory", ids: ["save-favorite", "recall-favorite"] },
+  { label: "guideOther", ids: [...knowledge.records.filter(record => record.kind === "article").map(record => record.id), "child-lock"] },
+] as const;
 
 export function recordParentPath(record: ApplianceRecord) {
   if (directPrograms.has(record.id)) return "/programs";

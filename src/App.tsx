@@ -36,7 +36,6 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
   Check,
   ChevronRight,
   ChevronLeft,
@@ -73,11 +72,12 @@ import { Disclosure } from "./components/Disclosure";
 import { ControlPanel } from "./components/ControlPanel";
 import { Simulator } from "./components/Simulator";
 import { PageMetadata } from "./components/PageMetadata";
+import { RecordIcon } from "./components/RecordIcon";
 import { UpdateButton, UpdatePrompt } from "./components/UpdateDialog";
 import { Navigation, tabs, type Section } from "./components/Navigation";
 import { useSimulator } from "./simulator";
 import { formatSeconds, programmeDuration } from "./time";
-import { isGuideFeature, recordParentPath } from "./site";
+import { guideSections, recordParentPath } from "./site";
 
 type AppContext = {
   locale: Locale;
@@ -266,6 +266,11 @@ function SearchSheet({
   const deferredQuery = useDeferredValue(query);
   const results = useMemo(() => search(deferredQuery), [deferredQuery]);
   const [editing, setEditing] = useState(false);
+  const reducedMotion = useReducedMotionConfig();
+  const toolbar = useRef<HTMLFormElement>(null);
+  const resultPane = useRef<HTMLDivElement>(null);
+  const resultContent = useRef<HTMLDivElement>(null);
+  const [resultHeight, setResultHeight] = useState(0);
   const backdropPress = useRef(false);
   const canEdit = results.some((result) => result.kind !== "control");
   const locationRef = useRef(location);
@@ -282,20 +287,45 @@ function SearchSheet({
   useLayoutEffect(() => {
     const viewport = window.visualViewport;
     const sheet = dialog.current;
-    if (location.pathname !== "/search" || !viewport || !sheet) return;
+    const bar = toolbar.current;
+    const content = resultContent.current;
+    if (location.pathname !== "/search" || !sheet || !bar || !content) {
+      setResultHeight(0);
+      return;
+    }
+    const measureResults = () => {
+      const style = getComputedStyle(sheet);
+      const insets = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
+        parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+      const maxHeight = parseFloat(style.maxHeight);
+      const available = Math.max(0, maxHeight - insets - bar.offsetHeight);
+      setResultHeight(Number.isFinite(available) ? Math.min(content.offsetHeight, available) : content.offsetHeight);
+    };
     const updatePosition = () => {
-      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      sheet.style.setProperty("--search-viewport-offset", `${offset}px`);
-      sheet.style.setProperty("--search-viewport-height", `${viewport.height}px`);
+      if (viewport) {
+        const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+        sheet.style.setProperty("--search-viewport-offset", `${offset}px`);
+        sheet.style.setProperty("--search-viewport-height", `${viewport.height}px`);
+      }
+      measureResults();
     };
     updatePosition();
-    viewport.addEventListener("resize", updatePosition);
-    viewport.addEventListener("scroll", updatePosition);
+    const observer = new ResizeObserver(measureResults);
+    observer.observe(content);
+    observer.observe(bar);
+    window.addEventListener("resize", updatePosition);
+    viewport?.addEventListener("resize", updatePosition);
+    viewport?.addEventListener("scroll", updatePosition);
     return () => {
-      viewport.removeEventListener("resize", updatePosition);
-      viewport.removeEventListener("scroll", updatePosition);
+      observer.disconnect();
+      window.removeEventListener("resize", updatePosition);
+      viewport?.removeEventListener("resize", updatePosition);
+      viewport?.removeEventListener("scroll", updatePosition);
     };
   }, [location.pathname, dialog]);
+  useLayoutEffect(() => {
+    if (resultPane.current) resultPane.current.scrollTop = 0;
+  }, [deferredQuery]);
   const setQuery = (value: string) =>
     navigate(`/search?q=${encodeURIComponent(value)}`, {
       replace: true,
@@ -334,6 +364,7 @@ function SearchSheet({
       }}
     >
       <form
+        ref={toolbar}
         className="search-toolbar"
         role="search"
         onSubmit={(event) => event.preventDefault()}
@@ -378,35 +409,44 @@ function SearchSheet({
       <p className="sr-only" role="status" aria-atomic="true">
         {deferredQuery && query === deferredQuery ? `${results.length} ${locale === "tr" ? "sonuç" : "results"}` : ""}
       </p>
-      <div className="search-results" aria-busy={query !== deferredQuery}>
-        {deferredQuery && !results.length && (
-          <p className="empty-state">{t("noResults")}</p>
-        )}
-        {results.length > 0 && (
-          <ul className="menu-list" role="list">
-            {results.map((result) => {
-              const content = <>
-                {result.code ? (
-                  <span className="result-code">{result.code}</span>
-                ) : (
-                  <BookOpen size={23} aria-hidden="true" />
-                )}
-                <span>{result.title[locale]}</span>
-              </>;
-              return result.kind === "control"
-                ? <li className="search-row" key={result.path}><Link to={result.path}>{content}</Link></li>
-                : <FavoriteRow
-                    key={result.path}
-                    className="search-row"
-                    id={result.id}
-                    path={result.path}
-                    editing={editing}
-                    name={result.title[locale]}
-                  >{content}</FavoriteRow>;
-            })}
-          </ul>
-        )}
-      </div>
+      <motion.div
+        ref={resultPane}
+        className="search-results"
+        aria-busy={query !== deferredQuery}
+        initial={false}
+        animate={{ height: resultHeight }}
+        transition={{ duration: reducedMotion ? 0 : 0.14, ease: "easeOut" }}
+      >
+        <div ref={resultContent} className="search-results-content">
+          {deferredQuery && !results.length && (
+            <p className="empty-state">{t("noResults")}</p>
+          )}
+          {results.length > 0 && (
+            <ul className="menu-list" role="list">
+              {results.map((result) => {
+                const content = <>
+                  {result.code ? (
+                    <span className="result-code">{result.code}</span>
+                  ) : (
+                    <RecordIcon id={result.id} functionId={result.functionId} size={23} />
+                  )}
+                  <span>{result.title[locale]}</span>
+                </>;
+                return result.kind === "control"
+                  ? <li className="search-row" key={result.path}><Link to={result.path}>{content}</Link></li>
+                  : <FavoriteRow
+                      key={result.path}
+                      className="search-row"
+                      id={result.id}
+                      path={result.path}
+                      editing={editing}
+                      name={result.title[locale]}
+                    >{content}</FavoriteRow>;
+              })}
+            </ul>
+          )}
+        </div>
+      </motion.div>
     </dialog>
   );
 }
@@ -698,14 +738,6 @@ function FavoriteRow({ id, path, className, name, editing, children }: {
   );
 }
 
-const recordIcons = {
-  "healthy-steam": WavesVertical,
-  "auto-cook": CookingPot,
-  "quick-defrost": Snowflake,
-  microwave: Microwave,
-  "keep-warm": Waves,
-  other: BookOpen,
-};
 function RecordGrid({
   records,
   headingLevel: Heading = "h3",
@@ -719,7 +751,6 @@ function RecordGrid({
   return (
     <ul className="menu-list record-list" role="list">
       {records.map((record) => {
-        const Icon = record.id === "deodorization" ? Fan : recordIcons[record.function];
         const Label = editing ? "span" : Heading;
         return (
           <FavoriteRow
@@ -736,7 +767,7 @@ function RecordGrid({
               </span>
             ) : (
               <span className="row-symbol">
-                <Icon size={26} aria-hidden="true" />
+                <RecordIcon id={record.id} functionId={record.function} size={26} />
               </span>
             )}
             <Label className="record-name">{record.title[locale]}</Label>
@@ -1294,17 +1325,12 @@ function SimulationPage() {
 function Guide() {
   const { t } = useApp();
   const [editing, setEditing] = useState(false);
-  const articles = knowledge.records.filter(
-    (record) => record.kind === "article",
-  );
-  const features = knowledge.records.filter(isGuideFeature);
   return (
     <>
       <PageHeading title={t("guide")} action={<FavoriteModeButton editing={editing} onToggle={() => setEditing(!editing)} />} />
-      <h2 className="section-title">{t("other")}</h2>
-      <RecordGrid records={features} editing={editing} />
-      <h2 className="section-title">{t("learn")}</h2>
-      <RecordGrid records={articles} editing={editing} />
+      {guideSections.map(({ label, ids }) => (
+        <RecordSection key={label} title={t(label)} records={ids.map(id => recordById.get(id)!)} editing={editing} />
+      ))}
       <section className="surface power-guide-card">
         <h2 id="power-guide-title">{t("powerGuide")}</h2>
         <div className="power-guide-viewport" role="region" aria-labelledby="power-guide-title" tabIndex={0}>

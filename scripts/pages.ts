@@ -4,7 +4,7 @@ import { knowledge, quantityText, type Locale } from "../src/data/schema.ts";
 import { guidedActions, instructionText } from "../src/instructions.ts";
 import { messages } from "../src/i18n.ts";
 import { formatSeconds } from "../src/time.ts";
-import { isGuideFeature, markdownPath, metadataFor, pageFor, publicPages, siteName, siteUrl, socialImagePath, structuredData, type SitePage } from "../src/site.ts";
+import { guideSections, markdownPath, metadataFor, pageFor, publicPages, siteName, siteUrl, socialImagePath, structuredData, type SitePage } from "../src/site.ts";
 import { escapeXml, png, shareSvg } from "./brand.ts";
 
 export function pageHead(page: SitePage) {
@@ -16,6 +16,11 @@ export function pageHead(page: SitePage) {
     ...(page.indexable ? [`<link rel="alternate" type="text/markdown" href="${siteUrl + markdownPath(page)}">`] : []),
     `<script id="page-data" type="application/ld+json">${JSON.stringify(page.indexable ? structuredData(page) : {}).replace(/</g, "\\u003c")}</script>`,
   ].join("\n    ");
+}
+
+function markdownLink(page: SitePage) {
+  const code = page.record?.code ? `${page.record.code} · ` : "";
+  return `- [${code}${page.heading}](${siteUrl + page.canonicalPath}) · [Markdown](${siteUrl + markdownPath(page)})`;
 }
 
 function markdown(page: SitePage) {
@@ -50,14 +55,17 @@ function markdown(page: SitePage) {
     lines.push("This is a simulation. It does not control the physical microwave. Interactive controls require JavaScript.", "");
     for (const control of knowledge.controls.filter(control => !page.controlId || control.id === page.controlId))
       lines.push(`## ${control.hardware}`, "", control.summary.tr, "", control.summary.en, "");
+  } else if (page.kind === "guide") {
+    for (const { label, ids } of guideSections) {
+      lines.push(`## ${messages.tr[label]} / ${messages.en[label]}`, "", ...ids.map(id => markdownLink(pageFor(`/programs/${id}`))), "");
+    }
+    lines.push("## Güç seviyeleri / Power levels", "", ...[...knowledge.powerLevels].sort((a, b) => a - b).map(power => `${power} W · ${messages.tr[`power${power}` as keyof typeof messages.tr]} / ${messages.en[`power${power}` as keyof typeof messages.en]}`));
   } else {
     let linked = publicPages().filter(item => item.kind === "record");
     if (page.kind === "home") linked = ["/functions/quick-defrost", "/functions/auto-cook", "/functions/healthy-steam", "/functions/microwave", "/programs/keep-warm", "/programs/deodorization", "/simulation", "/guide"].map(path => pageFor(path));
     if (page.kind === "category" && !page.functionId) linked = linked.filter(item => item.record!.kind !== "article");
     if (page.functionId) linked = linked.filter(item => item.functionId === page.functionId && item.record!.kind !== "article");
-    if (page.kind === "guide") linked = linked.filter(item => item.record!.kind === "article" || isGuideFeature(item.record!));
-    lines.push(...linked.map(item => `- [${item.record?.code ? `${item.record.code} · ` : ""}${item.heading}](${siteUrl + item.canonicalPath}) · [Markdown](${siteUrl + markdownPath(item)})`));
-    if (page.kind === "guide") lines.push("", "## Güç seviyeleri / Power levels", "", ...[...knowledge.powerLevels].sort((a, b) => a - b).map(power => `${power} W · ${messages.tr[`power${power}` as keyof typeof messages.tr]} / ${messages.en[`power${power}` as keyof typeof messages.en]}`));
+    lines.push(...linked.map(markdownLink));
   }
   return lines.join("\n") + "\n";
 }

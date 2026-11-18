@@ -594,10 +594,19 @@ p {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  margin-bottom: 14px;
 }
-.search-results:empty {
-  display: none;
+.search-results-content {
+  display: flow-root;
+}
+.search-results-content:not(:empty) {
+  padding-bottom: 14px;
+}
+.search-results-content :is(.search-row, .empty-state) {
+  animation: search-result-in 110ms ease-out;
+}
+@keyframes search-result-in {
+  from { opacity: 0.65; }
+  to { opacity: 1; }
 }
 .search-row > :is(a, button) {
   flex: 1;
@@ -629,9 +638,6 @@ p {
   .active-glass {
     background: var(--well);
   }
-}
-.section-title {
-  margin: 36px 0 22px;
 }
 .record-section + .record-section {
   margin-top: 28px;
