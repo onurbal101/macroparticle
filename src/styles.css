@@ -748,8 +748,24 @@ p {
   color: var(--muted);
 }
 .settings-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin-inline-start: auto;
   font-size: 16px;
+}
+.settings-link > span:nth-child(2) {
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  .settings-link[href="/account/model"] .settings-value {
+    font-size: 0;
+  }
+  .settings-link[href="/account/model"] .settings-value::after {
+    content: "Sams. MS23K3555ES/ND";
+    font-size: 16px;
+  }
 }
 .settings-icon {
   display: grid;
