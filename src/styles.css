@@ -146,6 +146,9 @@ p {
 }
 /* iOS-style grouped menus and floating navigation. */
 .app-shell {
+  --dock-edge: 20px;
+  --dock-height: 76px;
+  --search-slide-duration: 300ms;
   max-width: 920px;
   margin: auto;
   min-height: 100dvh;
@@ -370,7 +373,6 @@ p {
   color: light-dark(#9a6700, #edbf62);
 }
 .floating-dock {
-  --dock-edge: 20px;
   position: fixed;
   inset-inline: max(10px, env(safe-area-inset-left)) max(28px, env(safe-area-inset-right));
   bottom: calc(var(--dock-edge) + env(safe-area-inset-bottom));
@@ -395,7 +397,7 @@ p {
   align-items: center;
   flex: 1;
   min-width: 0;
-  min-height: 76px;
+  min-height: var(--dock-height);
   padding: 6px;
   border-radius: 42px;
   isolation: isolate;
@@ -496,6 +498,7 @@ p {
 }
 .search-sheet {
   --search-edge: max(14px, env(safe-area-inset-bottom));
+  --search-results-gap: 14px;
   position: fixed;
   inset: auto 12px calc(var(--search-viewport-offset, 0px) + var(--search-edge));
   width: min(660px, calc(100% - 24px));
@@ -507,20 +510,26 @@ p {
   background: var(--background);
   color: var(--ink);
   box-shadow: 0 14px 65px #0002;
+  overflow: clip;
   opacity: 0;
   transform: translateY(24px) scale(0.98);
   transition:
     opacity 180ms ease,
-    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    display 300ms,
-    overlay 300ms;
-  transition-behavior: allow-discrete;
+    transform var(--search-slide-duration) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .search-sheet[open] {
   display: flex;
   flex-direction: column-reverse;
+}
+.search-sheet[open]:not([data-closing]) {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+.search-sheet[data-closing] {
+  pointer-events: none;
+  transition:
+    opacity 180ms ease-in calc(var(--search-slide-duration) - 180ms),
+    transform var(--search-slide-duration) cubic-bezier(0.8, 0, 0.8, 0.2);
 }
 .search-sheet:modal {
   overscroll-behavior: contain;
@@ -529,7 +538,6 @@ p {
   background: transparent;
   overscroll-behavior: contain;
 }
-/* Keep the blur visible briefly after the native dialog leaves the top layer. */
 .search-backdrop {
   --fade-duration: 160ms;
   position: fixed;
@@ -545,13 +553,16 @@ p {
     opacity var(--fade-duration) ease-out,
     visibility 0s var(--fade-duration);
 }
-.search-backdrop:has(+ .search-sheet[open]) {
+.search-backdrop:has(+ .search-sheet[open]:not([data-closing])) {
   visibility: visible;
   opacity: 1;
   transition-delay: 0s;
 }
+.search-backdrop:has(+ .search-sheet[data-closing]) {
+  --fade-duration: var(--search-slide-duration);
+}
 @starting-style {
-  .search-sheet[open] {
+  .search-sheet[open]:not([data-closing]) {
     opacity: 0;
     transform: translateY(24px) scale(0.98);
   }
@@ -604,15 +615,17 @@ p {
   color: var(--accent);
 }
 .search-results {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) var(--search-results-gap);
   min-height: 0;
+  overflow: clip;
+}
+.search-results-viewport {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 .search-results-content {
   display: flow-root;
-}
-.search-results-content:not(:empty) {
-  padding-bottom: 14px;
 }
 .search-results-content :is(.search-row, .empty-state) {
   animation: search-result-in 110ms ease-out;
@@ -1283,7 +1296,7 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
   clip-path: inset(0 100% 0 0);
 }
 .child-lock-key[data-hold] .child-lock-fill {
-  transition: clip-path 3s linear;
+  transition: clip-path 3s cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 .child-lock-cancellation {
   opacity: 0;
@@ -1364,6 +1377,7 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
 }
 .simulation-view {
   --simulation-dock-space: calc(106px + env(safe-area-inset-bottom));
+  --simulation-dock-clearance: calc(var(--dock-height) + var(--dock-edge) + env(safe-area-inset-bottom) + 8px);
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -1435,12 +1449,15 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
   font-size: 15px;
   white-space: nowrap;
 }
-.control-detail {
+.simulation-information {
   max-height: 100%;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
   border-radius: 19px;
+}
+.control-detail {
+  border-radius: inherit;
   padding: 17px;
   margin: 0;
 }
@@ -1716,10 +1733,11 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
     width: 33px;
     height: 33px;
   }
-  .simulation-explorer .control-detail {
+  .simulation-explorer .simulation-information {
     height: calc(100% + var(--simulation-dock-space));
     max-height: none;
-    padding-block-end: calc(17px + var(--simulation-dock-space));
+    padding-block-end: var(--simulation-dock-clearance);
+    scroll-padding-block-end: var(--simulation-dock-clearance);
   }
 }
 @media (max-width: 740px) {
@@ -1895,11 +1913,11 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
   .page-view.simulation-view {
     --simulation-dock-space: calc(72px + env(safe-area-inset-bottom));
   }
-  .app-shell:has(.simulation-view) .floating-dock {
+  .app-shell:has(.simulation-view) {
     --dock-edge: 8px;
+    --dock-height: 56px;
   }
   .app-shell:has(.simulation-view) .main-nav {
-    min-height: 56px;
     padding-block: 2px;
   }
   .app-shell:has(.simulation-view) .main-nav a {
@@ -1991,10 +2009,11 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
     min-height: 40px;
     padding-inline: 5px;
   }
-  .simulation-explorer .control-detail {
+  .simulation-explorer .simulation-information {
     max-height: 100%;
     height: auto;
-    padding-block-end: 17px;
+    padding-block-end: 0;
+    scroll-padding-block-end: 0;
   }
   .app-shell:has(.simulation-view) .floating-search {
     width: 48px;
@@ -2015,8 +2034,8 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
 }
 @media (display-mode: standalone) and (max-width: 740px),
   (display-mode: standalone) and (hover: none) and (pointer: coarse) and (max-height: 540px) {
-  .floating-dock,
-  .app-shell:has(.simulation-view) .floating-dock {
+  .app-shell,
+  .app-shell:has(.simulation-view) {
     --dock-edge: 6px;
   }
 }

@@ -263,11 +263,11 @@ function SearchSheet({
   const { t, locale } = useApp();
   const location = useLocation();
   const navigate = useNavigate();
-  const query =
-    location.pathname === "/search"
-      ? new URLSearchParams(location.search).get("q") || ""
-      : "";
-  const deferredQuery = useDeferredValue(query);
+  const searchOpen = location.pathname === "/search";
+  const lastSearch = useRef("");
+  const query = new URLSearchParams(searchOpen ? location.search : lastSearch.current).get("q") || "";
+  const pendingQuery = useDeferredValue(query);
+  const deferredQuery = query ? pendingQuery : "";
   const results = useMemo(() => search(deferredQuery), [deferredQuery]);
   const [editing, setEditing] = useState(false);
   const reducedMotion = useReducedMotionConfig();
@@ -276,36 +276,61 @@ function SearchSheet({
   const resultContent = useRef<HTMLDivElement>(null);
   const [resultHeight, setResultHeight] = useState(0);
   const backdropPress = useRef(false);
+  const closing = useRef<Promise<unknown> | null>(null);
   const canEdit = results.some((result) => result.kind !== "control");
   const locationRef = useRef(location);
   locationRef.current = location;
+  const closeSearch = useCallback(() => {
+    const sheet = dialog.current;
+    if (!sheet?.open || sheet.hasAttribute("data-closing")) return;
+    sheet.setAttribute("data-closing", "");
+    // Keep the dialog in the top layer until the exit finishes, including on Safari.
+    const animations = sheet.getAnimations();
+    if (!animations.length) {
+      sheet.close();
+      return;
+    }
+    const exit = Promise.allSettled(animations.map((animation) => animation.finished));
+    closing.current = exit;
+    void exit.then(() => {
+      if (closing.current === exit) sheet.close();
+    });
+  }, [dialog]);
   useLayoutEffect(() => {
     const sheet = dialog.current;
-    if (location.pathname === "/search" && sheet && !sheet.open) {
-      sheet.showModal();
-      input.current?.focus({ preventScroll: true });
-    } else if (location.pathname !== "/search" && sheet?.open) {
-      sheet.close();
+    if (!sheet) return;
+    if (searchOpen) {
+      closing.current = null;
+      sheet.removeAttribute("data-closing");
+      if (!sheet.open) {
+        sheet.showModal();
+        input.current?.focus({ preventScroll: true });
+      }
+    } else {
+      closeSearch();
     }
-  }, [location.pathname, dialog, input]);
+  }, [searchOpen, dialog, input, closeSearch]);
+  useLayoutEffect(() => {
+    if (searchOpen) lastSearch.current = location.search;
+  }, [searchOpen, location.search]);
   useLayoutEffect(() => {
     const viewport = window.visualViewport;
     const sheet = dialog.current;
     const bar = toolbar.current;
     const content = resultContent.current;
-    if (location.pathname !== "/search" || !sheet || !bar || !content) {
-      setResultHeight(0);
-      return;
-    }
+    if (!searchOpen || !sheet || !bar || !content) return;
     const measureResults = () => {
       const style = getComputedStyle(sheet);
       const insets = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
         parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
       const maxHeight = parseFloat(style.maxHeight);
       const available = Math.max(0, maxHeight - insets - bar.offsetHeight);
-      setResultHeight(Number.isFinite(available) ? Math.min(content.offsetHeight, available) : content.offsetHeight);
+      const gap = parseFloat(style.getPropertyValue("--search-results-gap"));
+      const height = content.offsetHeight ? content.offsetHeight + gap : 0;
+      setResultHeight(Number.isFinite(available) ? Math.min(height, available) : height);
     };
     const updatePosition = () => {
+      if (sheet.hasAttribute("data-closing")) return;
       if (viewport) {
         const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
         sheet.style.setProperty("--search-viewport-offset", `${offset}px`);
@@ -326,15 +351,17 @@ function SearchSheet({
       viewport?.removeEventListener("resize", updatePosition);
       viewport?.removeEventListener("scroll", updatePosition);
     };
-  }, [location.pathname, dialog]);
+  }, [searchOpen, dialog]);
   useLayoutEffect(() => {
     if (resultPane.current) resultPane.current.scrollTop = 0;
   }, [deferredQuery]);
-  const setQuery = (value: string) =>
+  const setQuery = (value: string) => {
+    if (!searchOpen || dialog.current?.hasAttribute("data-closing")) return;
     navigate(`/search?q=${encodeURIComponent(value)}`, {
       replace: true,
       state: location.state,
     });
+  };
   const hitsBackdrop = (event: { target: EventTarget; currentTarget: HTMLDialogElement; clientX: number; clientY: number }) => {
     if (event.target !== event.currentTarget) return false;
     const { left, right, top, bottom } = event.currentTarget.getBoundingClientRect();
@@ -344,18 +371,26 @@ function SearchSheet({
     <dialog
       id="search-sheet"
       className="search-sheet"
-      closedby="any"
       ref={dialog}
       aria-label={t("searchShort")}
       onPointerDown={event => {
-        if (!("closedBy" in event.currentTarget)) backdropPress.current = hitsBackdrop(event);
+        backdropPress.current = hitsBackdrop(event);
       }}
       onPointerCancel={() => { backdropPress.current = false; }}
       onClick={event => {
-        if (backdropPress.current && hitsBackdrop(event)) event.currentTarget.close();
+        if (backdropPress.current && hitsBackdrop(event)) closeSearch();
         backdropPress.current = false;
       }}
-      onClose={() => {
+      onCancel={(event) => {
+        event.preventDefault();
+        closeSearch();
+      }}
+      onClose={(event) => {
+        if (event.currentTarget.open) return;
+        event.currentTarget.removeAttribute("data-closing");
+        closing.current = null;
+        lastSearch.current = "";
+        setResultHeight(0);
         setEditing(false);
         if (locationRef.current.pathname !== "/search") return;
         onDismiss();
@@ -405,7 +440,7 @@ function SearchSheet({
         <button
           type="button"
           className="search-cancel"
-          onClick={() => dialog.current?.close()}
+          onClick={closeSearch}
         >
           {t("cancel")}
         </button>
@@ -414,41 +449,42 @@ function SearchSheet({
         {deferredQuery && query === deferredQuery ? `${results.length} ${locale === "tr" ? "sonuç" : "results"}` : ""}
       </p>
       <motion.div
-        ref={resultPane}
         className="search-results"
         aria-busy={query !== deferredQuery}
         initial={false}
         animate={{ height: resultHeight }}
         transition={{ duration: reducedMotion ? 0 : 0.14, ease: "easeOut" }}
       >
-        <div ref={resultContent} className="search-results-content">
-          {deferredQuery && !results.length && (
-            <p className="empty-state">{t("noResults")}</p>
-          )}
-          {results.length > 0 && (
-            <ul className="menu-list" role="list">
-              {results.map((result) => {
-                const content = <>
-                  {result.code ? (
-                    <span className="result-code">{result.code}</span>
-                  ) : (
-                    <RecordIcon id={result.id} functionId={result.functionId} size={23} />
-                  )}
-                  <span>{result.title[locale]}</span>
-                </>;
-                return result.kind === "control"
-                  ? <li className="search-row" key={result.path}><Link to={result.path}>{content}</Link></li>
-                  : <FavoriteRow
-                      key={result.path}
-                      className="search-row"
-                      id={result.id}
-                      path={result.path}
-                      editing={editing}
-                      name={result.title[locale]}
-                    >{content}</FavoriteRow>;
-              })}
-            </ul>
-          )}
+        <div ref={resultPane} className="search-results-viewport">
+          <div ref={resultContent} className="search-results-content">
+            {deferredQuery && !results.length && (
+              <p className="empty-state">{t("noResults")}</p>
+            )}
+            {results.length > 0 && (
+              <ul className="menu-list" role="list">
+                {results.map((result) => {
+                  const content = <>
+                    {result.code ? (
+                      <span className="result-code">{result.code}</span>
+                    ) : (
+                      <RecordIcon id={result.id} functionId={result.functionId} size={23} />
+                    )}
+                    <span>{result.title[locale]}</span>
+                  </>;
+                  return result.kind === "control"
+                    ? <li className="search-row" key={result.path}><Link to={result.path}>{content}</Link></li>
+                    : <FavoriteRow
+                        key={result.path}
+                        className="search-row"
+                        id={result.id}
+                        path={result.path}
+                        editing={editing}
+                        name={result.title[locale]}
+                      >{content}</FavoriteRow>;
+                })}
+              </ul>
+            )}
+          </div>
         </div>
       </motion.div>
     </dialog>

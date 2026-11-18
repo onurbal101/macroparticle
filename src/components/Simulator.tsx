@@ -68,12 +68,14 @@ export function Simulator({ locale, machine, initialControl }: {
         onLock={() => dispatch({ type: "lock" })}
         locked={state.locked}
       />
-      <section ref={information} className="surface control-detail" tabIndex={0} aria-label={c.information}>
-        <div aria-live="polite" aria-atomic="true">
-          <h2>{record?.title[locale] ?? selected?.name[locale] ?? (locale === "tr" ? "Mikrodalga" : "Microwave")}</h2>
-          {status && <p className="simulator-status">{status}</p>}
+      <section ref={information} className="simulation-information" tabIndex={0} aria-label={c.information}>
+        <div className="surface control-detail">
+          <div aria-live="polite" aria-atomic="true">
+            <h2>{record?.title[locale] ?? selected?.name[locale] ?? (locale === "tr" ? "Mikrodalga" : "Microwave")}</h2>
+            {status && <p className="simulator-status">{status}</p>}
+          </div>
+          {record && <ProgrammeInformation record={record} locale={locale} embedded />}
         </div>
-        {record && <ProgrammeInformation record={record} locale={locale} embedded />}
       </section>
     </div>
   );
