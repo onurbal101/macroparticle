@@ -3113,7 +3113,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 470
+        }
+      ]
     },
     {
       "id": "auto-2",
@@ -3216,7 +3222,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 580
+        }
+      ]
     },
     {
       "id": "auto-3",
@@ -3319,7 +3331,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 450
+        }
+      ]
     },
     {
       "id": "auto-4",
@@ -3422,7 +3440,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 480
+        }
+      ]
     },
     {
       "id": "auto-5",
@@ -3527,7 +3551,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 260
+        }
+      ]
     },
     {
       "id": "auto-6",
@@ -3632,7 +3662,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 290
+        }
+      ]
     },
     {
       "id": "auto-7",
@@ -3737,7 +3773,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 330
+        }
+      ]
     },
     {
       "id": "auto-8",
@@ -3842,7 +3884,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 180
+        }
+      ]
     },
     {
       "id": "auto-9",
@@ -3947,7 +3995,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 300
+        }
+      ]
     },
     {
       "id": "auto-10",
@@ -4052,7 +4106,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 290
+        }
+      ]
     },
     {
       "id": "auto-11",
@@ -4157,7 +4217,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 900
+        }
+      ]
     },
     {
       "id": "auto-12",
@@ -4262,7 +4328,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 720
+        }
+      ]
     },
     {
       "id": "auto-13",
@@ -4367,7 +4439,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 1080
+        }
+      ]
     },
     {
       "id": "auto-14",
@@ -4472,7 +4550,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 660
+        }
+      ]
     },
     {
       "id": "auto-15",
@@ -4577,7 +4661,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 540
+        }
+      ]
     },
     {
       "id": "auto-16",
@@ -4682,7 +4772,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 450
+        }
+      ]
     },
     {
       "id": "auto-17",
@@ -4787,7 +4883,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 440
+        }
+      ]
     },
     {
       "id": "auto-18",
@@ -4892,7 +4994,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 460
+        }
+      ]
     },
     {
       "id": "auto-19",
@@ -4997,7 +5105,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 180
+        }
+      ]
     },
     {
       "id": "auto-20",
@@ -5102,7 +5216,13 @@
         }
       ],
       "verification": "manual",
-      "automatic": true
+      "automatic": true,
+      "durationVariants": [
+        {
+          "quantity": null,
+          "seconds": 270
+        }
+      ]
     },
     {
       "id": "defrost-1",

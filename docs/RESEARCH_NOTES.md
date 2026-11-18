@@ -2,7 +2,7 @@
 
 The default view uses tasks. Food results retain the parent function and full code. The user can also learn every physical control from a panel that follows TR09 p. 11. Its knob and separate Select/Clock key are distinct targets.
 
-Automatic cooking times stay automatic. The app does not calculate durations for automatic presets. Auto Cook quantities are fixed by code. Healthy Steam exposes only listed quantities. Defrost shows the documented range. The simulator uses the reported 100 g poultry increment as its default step.
+Auto Cook uses one countdown per code, based on readings the user supplied on 2026-11-19. Auto Cook quantities are fixed by code. Healthy Steam exposes only listed quantities. Defrost shows the documented range. The simulator uses the reported 100 g poultry increment as its default step. Automatic presets without recorded times display `AUTO`.
 
 Instruction actions are data. Shared sequences cite their own procedure pages. Each food cites its table page. Safety guidance is attached to the relevant food or workflow. Personal bookmarks and notes are local app data. Appliance Favorite memories have their own guide.
 
