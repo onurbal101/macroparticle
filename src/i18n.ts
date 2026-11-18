@@ -115,7 +115,11 @@ export const messages = {
     ready: "Çevrimdışı kullanıma hazır",
     loadingOffline: "Çevrimdışı kopya hazırlanıyor",
     update: "Yeni sürüm hazır",
+    updateDescription: "Güncelleme uygulamayı yeniden yükler.",
     updateAction: "Güncelle",
+    updateLater: "Daha sonra",
+    updating: "Güncelleniyor…",
+    updateError: "Güncelleme yapılamadı. Tekrar deneyin.",
     install: "Ana ekrana ekle",
     installHelp:
       "Tarayıcı menüsünden Ana Ekrana Ekle veya Uygulamayı Yükle seçeneğini kullan. İlk açılışta çevrimdışı hazırlığın bitmesini bekle.",
@@ -299,7 +303,11 @@ export const messages = {
     ready: "Ready for offline use",
     loadingOffline: "Preparing the offline copy",
     update: "An update is ready",
+    updateDescription: "Updating reloads the app.",
     updateAction: "Update",
+    updateLater: "Later",
+    updating: "Updating…",
+    updateError: "The update failed. Try again.",
     install: "Add to Home Screen",
     installHelp:
       "Use Add to Home Screen or Install App in your browser menu. Let offline preparation finish on the first visit.",

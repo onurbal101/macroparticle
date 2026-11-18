@@ -33,7 +33,6 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
-import { useRegisterSW } from "virtual:pwa-register/react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -73,6 +72,7 @@ import { Disclosure } from "./components/Disclosure";
 import { ControlPanel } from "./components/ControlPanel";
 import { Simulator } from "./components/Simulator";
 import { PageMetadata } from "./components/PageMetadata";
+import { UpdateDialog } from "./components/UpdateDialog";
 import { Navigation, tabs, type Section } from "./components/Navigation";
 import { useSimulator } from "./simulator";
 import { formatSeconds, programmeDuration } from "./time";
@@ -102,23 +102,6 @@ const functions = [
   "keep-warm",
   "other",
 ] as const;
-
-function UpdateNotice() {
-  const { t } = useApp();
-  const {
-    needRefresh: [available],
-    updateServiceWorker,
-  } = useRegisterSW();
-  if (!available) return null;
-  return (
-    <div className="update-notice" role="status">
-      <span>{t("update")}</span>
-      <button onClick={() => updateServiceWorker(true)}>
-        {t("updateAction")}
-      </button>
-    </div>
-  );
-}
 
 type NavigationState = {
   tab?: Section;
@@ -543,7 +526,7 @@ export default function App() {
             />
             <div className="search-backdrop" aria-hidden="true" />
             <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
-            <UpdateNotice />
+            <UpdateDialog locale={locale} blocked={location.pathname === "/search" || (isSimulator(location.pathname) && machine.state.status === "running")} />
           </div>
         </LazyMotion>
       </MotionConfig>

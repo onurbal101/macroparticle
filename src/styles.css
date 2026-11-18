@@ -1483,33 +1483,113 @@ button.select-key:active {
 .mobile-step-panel {
   display: none;
 }
-.notice,
-.update-notice {
+.notice {
   padding: 18px;
   border: 1px solid var(--warning-border);
   border-radius: 8px;
   background: var(--warning-surface);
   font-size: 18px;
 }
-.update-notice {
+.update-dialog {
   position: fixed;
-  z-index: 40;
-  bottom: 105px;
-  left: 20px;
-  right: 20px;
-  max-width: 600px;
+  inset: 0;
+  width: min(22rem, calc(100% - 40px));
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   margin: auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
+  padding: 26px 20px 20px;
+  border: 1px solid var(--glass-rim);
+  border-radius: 30px;
+  background: var(--raised);
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 var(--glass-light), 0 20px 58px var(--glass-shade);
+  text-align: center;
+  opacity: 0;
+  transform: translateY(5px) scale(0.97);
+  transition: opacity 160ms ease-out, transform 190ms ease-out, display 190ms, overlay 190ms;
+  transition-behavior: allow-discrete;
 }
-.update-notice button {
+.update-dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+.update-dialog:modal {
+  overscroll-behavior: contain;
+}
+.update-dialog::backdrop {
+  background: light-dark(rgb(25 31 49 / 24%), rgb(7 6 12 / 48%));
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+@starting-style {
+  .update-dialog[open] { opacity: 0; transform: translateY(5px) scale(0.97); }
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .update-dialog {
+    background: color-mix(in srgb, var(--raised) 88%, transparent);
+    -webkit-backdrop-filter: blur(24px) saturate(145%);
+    backdrop-filter: blur(24px) saturate(145%);
+  }
+  .update-dialog::backdrop {
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .update-dialog { background: var(--raised); }
+  .update-dialog,
+  .update-dialog::backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+.update-symbol {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface));
+  color: var(--accent);
+}
+.update-dialog h2 {
+  margin: 0 0 6px;
+  font-size: 23px;
+}
+.update-dialog p {
+  margin: 0 auto 22px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.45;
+}
+.update-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.update-actions button {
+  min-height: 47px;
+  border: 0;
+  border-radius: 23px;
+  padding: 9px 10px;
+  background: var(--well);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  transition: background-color 120ms ease-out;
+}
+.update-actions button:focus-visible { outline-offset: 2px; }
+.update-actions button:not(:disabled):active { background: var(--pressed); }
+.update-actions .update-confirm {
   background: var(--accent);
   color: var(--on-accent);
-  border: 0;
-  padding: 12px 20px;
-  border-radius: 7px;
+}
+.update-actions .update-confirm:active {
+  background: color-mix(in srgb, var(--accent) 86%, var(--ink));
+}
+.update-confirm[aria-disabled="true"] {
+  cursor: wait;
 }
 
 @media (max-width: 900px) {
