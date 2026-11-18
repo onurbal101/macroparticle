@@ -146,12 +146,13 @@ p {
 }
 /* iOS-style grouped menus and floating navigation. */
 .app-shell {
+  --app-max-width: 920px;
   --dock-bottom: calc(20px + env(safe-area-inset-bottom));
   --dock-height: 76px;
   --dock-padding-block: 6px;
   --dock-search-size: 64px;
   --search-slide-duration: 300ms;
-  max-width: 920px;
+  max-width: var(--app-max-width);
   margin: auto;
   min-height: 100dvh;
 }
@@ -160,6 +161,19 @@ p {
   overflow: clip;
   isolation: isolate;
   min-height: 100dvh;
+}
+/* A fixed background keeps the document itself out of the scroll chain. */
+.app-shell:has(.page-stage[data-search-scroll-lock]) {
+  min-height: 0;
+}
+.page-stage[data-search-scroll-lock] {
+  position: fixed;
+  inset: var(--frozen-page-top) 0 0;
+  max-width: var(--app-max-width);
+  margin-inline: auto;
+}
+:root:has(.page-stage[data-search-scroll-lock]) {
+  overscroll-behavior: none;
 }
 .page-view {
   position: relative;
@@ -621,15 +635,17 @@ p {
   color: var(--accent);
 }
 .search-results {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) var(--search-results-gap);
+  display: flex;
+  flex-direction: column;
   min-height: 0;
-  overflow: clip;
+  overflow: hidden;
 }
 .search-results-viewport {
+  flex: 1;
+  min-height: 0;
+  margin-block-end: var(--search-results-gap);
   overflow-y: auto;
   overscroll-behavior: contain;
-  touch-action: pan-y pinch-zoom;
 }
 .search-results-content {
   display: flow-root;

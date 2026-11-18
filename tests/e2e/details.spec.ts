@@ -50,6 +50,35 @@ test("search reports results and returns focus to its button", async ({ page }) 
   await expect(search).toBeFocused();
 });
 
+test("only the results list scrolls while search is open", async ({ page }) => {
+  await page.goto("/functions/auto-cook");
+  await page.evaluate(() => window.scrollTo(0, 500));
+  const pageView = page.locator(".page-view");
+  const originalTop = await pageView.evaluate(element => element.getBoundingClientRect().top);
+  expect(originalTop).toBe(-500);
+
+  await page.getByRole("button", { name: "Ara", exact: true }).click();
+  await page.getByRole("searchbox").fill("buhar");
+  const results = page.locator(".search-results-viewport");
+  await expect.poll(() => results.evaluate(element => element.clientHeight)).toBeGreaterThan(100);
+  const box = await results.boundingBox();
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.wheel(0, 150);
+  await expect.poll(() => results.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+
+  const documentScroll = await page.evaluate(() => {
+    window.scrollTo(0, 500);
+    const root = document.scrollingElement!;
+    return [root.scrollTop, root.scrollHeight - root.clientHeight];
+  });
+  expect(documentScroll).toEqual([0, 0]);
+  await expect.poll(() => pageView.evaluate(element => element.getBoundingClientRect().top)).toBe(originalTop);
+
+  await page.getByRole("button", { name: "Vazgeç", exact: true }).click();
+  await expect(page).toHaveURL(/\/functions\/auto-cook$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(500);
+});
+
 test("Reduce Motion follows the device and saves explicit choices", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/account");

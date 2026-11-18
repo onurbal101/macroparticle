@@ -166,27 +166,61 @@ function MenuBack({ fallback = "/programs" }: { fallback?: string }) {
   );
 }
 
+function usePageScroll() {
+  const stage = useRef<HTMLElement>(null);
+  const lockedTop = useRef<number | null>(null);
+  return useMemo(() => {
+    const freeze = (top: number) => {
+      lockedTop.current = top;
+      stage.current?.style.setProperty("--frozen-page-top", `${-top}px`);
+    };
+    return {
+      stage,
+      read: () => lockedTop.current ?? window.scrollY,
+      write(top: number) {
+        if (lockedTop.current === null) window.scrollTo(0, top);
+        else freeze(top);
+      },
+      lock() {
+        if (lockedTop.current !== null || !stage.current) return;
+        freeze(window.scrollY);
+        stage.current.setAttribute("data-search-scroll-lock", "");
+      },
+      unlock() {
+        const top = lockedTop.current;
+        if (top === null) return;
+        lockedTop.current = null;
+        stage.current?.removeAttribute("data-search-scroll-lock");
+        stage.current?.style.removeProperty("--frozen-page-top");
+        window.scrollTo(0, top);
+      },
+    };
+  }, []);
+}
+
 function PageScreen({
   children,
   offset,
   location,
   positions,
   restore,
+  pageScroll,
 }: {
   children: ReactNode;
   offset: number;
   location: RouterLocation;
   positions: Map<string, number>;
   restore: boolean;
+  pageScroll: ReturnType<typeof usePageScroll>;
 }) {
   const reducedMotion = useReducedMotionConfig();
   const view = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    window.scrollTo(0, restore ? positions.get(location.key) || 0 : 0);
+    pageScroll.write(restore ? positions.get(location.key) || 0 : 0);
     const heading = view.current?.querySelector<HTMLHeadingElement>("h1");
     heading?.focus({ preventScroll: true });
     return () => {
-      positions.set(location.key, window.scrollY);
+      positions.set(location.key, pageScroll.read());
     };
   }, [location.key]);
   return (
@@ -202,7 +236,9 @@ function PageScreen({
   );
 }
 
-function AnimatedRoutes({ location }: { location: RouterLocation }) {
+function AnimatedRoutes({ location, pageScroll }: {
+  location: RouterLocation; pageScroll: ReturnType<typeof usePageScroll>;
+}) {
   const navigationType = useNavigationType();
   const positions = useRef(new Map<string, number>());
   const tabIndex = tabs.findIndex(({ key }) => key === sectionFor(location));
@@ -225,6 +261,7 @@ function AnimatedRoutes({ location }: { location: RouterLocation }) {
       location={location}
       positions={positions.current}
       restore={navigationType === "POP"}
+      pageScroll={pageScroll}
     >
       <Routes location={location}>
         <Route path="/" element={<Home />} />
@@ -255,10 +292,12 @@ function SearchSheet({
   dialog,
   input,
   onDismiss,
+  pageScroll,
 }: {
   dialog: RefObject<HTMLDialogElement | null>;
   input: RefObject<HTMLInputElement | null>;
   onDismiss: () => void;
+  pageScroll: ReturnType<typeof usePageScroll>;
 }) {
   const { t, locale } = useApp();
   const location = useLocation();
@@ -283,19 +322,23 @@ function SearchSheet({
   const closeSearch = useCallback(() => {
     const sheet = dialog.current;
     if (!sheet?.open || sheet.hasAttribute("data-closing")) return;
+    const finish = () => {
+      sheet.close();
+      pageScroll.unlock();
+    };
     sheet.setAttribute("data-closing", "");
     // Keep the dialog in the top layer until the exit finishes, including on Safari.
     const animations = sheet.getAnimations();
     if (!animations.length) {
-      sheet.close();
+      finish();
       return;
     }
     const exit = Promise.allSettled(animations.map((animation) => animation.finished));
     closing.current = exit;
     void exit.then(() => {
-      if (closing.current === exit) sheet.close();
+      if (closing.current === exit) finish();
     });
-  }, [dialog]);
+  }, [dialog, pageScroll]);
   useLayoutEffect(() => {
     const sheet = dialog.current;
     if (!sheet) return;
@@ -303,13 +346,14 @@ function SearchSheet({
       closing.current = null;
       sheet.removeAttribute("data-closing");
       if (!sheet.open) {
+        pageScroll.lock();
         sheet.showModal();
         input.current?.focus({ preventScroll: true });
       }
     } else {
       closeSearch();
     }
-  }, [searchOpen, dialog, input, closeSearch]);
+  }, [searchOpen, dialog, input, pageScroll, closeSearch]);
   useLayoutEffect(() => {
     if (searchOpen) lastSearch.current = location.search;
   }, [searchOpen, location.search]);
@@ -317,9 +361,8 @@ function SearchSheet({
     const viewport = window.visualViewport;
     const sheet = dialog.current;
     const bar = toolbar.current;
-    const pane = resultPane.current;
     const content = resultContent.current;
-    if (!searchOpen || !sheet || !bar || !pane || !content) return;
+    if (!searchOpen || !sheet || !bar || !content) return;
     const measureResults = () => {
       const style = getComputedStyle(sheet);
       const insets = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
@@ -347,38 +390,11 @@ function SearchSheet({
     viewport?.addEventListener("resize", updatePosition);
     viewport?.addEventListener("scroll", updatePosition);
 
-    // Older WebKit releases can scroll the page through a non-scrolling modal.
-    let touchY = 0;
-    const guardScroll = (event: TouchEvent | WheelEvent, delta: number) => {
-      if (!event.cancelable || !delta) return;
-      const inResults = event.target instanceof Node && pane.contains(event.target);
-      const canScroll = delta < 0 ? pane.scrollTop > 0 :
-        pane.scrollTop + pane.clientHeight < pane.scrollHeight - 1;
-      if (!inResults || !canScroll) event.preventDefault();
-    };
-    const onTouchStart = (event: TouchEvent) => {
-      touchY = event.touches[0].clientY;
-    };
-    const onTouchMove = (event: TouchEvent) => {
-      if (event.touches.length !== 1) return;
-      const nextY = event.touches[0].clientY;
-      guardScroll(event, touchY - nextY);
-      touchY = nextY;
-    };
-    const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) guardScroll(event, event.deltaY);
-    };
-    sheet.addEventListener("touchstart", onTouchStart, { passive: true });
-    sheet.addEventListener("touchmove", onTouchMove, { passive: false });
-    sheet.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", updatePosition);
       viewport?.removeEventListener("resize", updatePosition);
       viewport?.removeEventListener("scroll", updatePosition);
-      sheet.removeEventListener("touchstart", onTouchStart);
-      sheet.removeEventListener("touchmove", onTouchMove);
-      sheet.removeEventListener("wheel", onWheel);
     };
   }, [searchOpen, dialog]);
   useLayoutEffect(() => {
@@ -416,6 +432,7 @@ function SearchSheet({
       }}
       onClose={(event) => {
         if (event.currentTarget.open) return;
+        pageScroll.unlock();
         event.currentTarget.removeAttribute("data-closing");
         closing.current = null;
         lastSearch.current = "";
@@ -522,6 +539,7 @@ function SearchSheet({
 
 export default function App() {
   const touchControls = useTouchControls();
+  const pageScroll = usePageScroll();
   const [preferences, setPreferences] = useState(() => parsePreferences(null));
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   useLayoutEffect(() => {
@@ -628,13 +646,13 @@ export default function App() {
               locale={locale}
               deferAutomatic={location.pathname === "/search" || (isSimulator(location.pathname) && machine.state.status === "running")}
             >
-              <main id="content" className="page-stage" tabIndex={-1}>
+              <main ref={pageScroll.stage} id="content" className="page-stage" tabIndex={-1}>
                 {storageError && (
                   <p className="notice" role="status">
                     {t("storageError")}
                   </p>
                 )}
-                <AnimatedRoutes location={background} />
+                <AnimatedRoutes location={background} pageScroll={pageScroll} />
               </main>
               <Navigation
                 section={sectionFor(location)}
@@ -643,7 +661,7 @@ export default function App() {
                 onSearch={openSearch}
               />
               <div className="search-backdrop" aria-hidden="true" />
-              <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
+              <SearchSheet dialog={dialog} input={input} pageScroll={pageScroll} onDismiss={() => { restoreSearchFocus.current = true; }} />
             </UpdatePrompt>
           </div>
         </LazyMotion>
