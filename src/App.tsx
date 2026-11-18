@@ -13,6 +13,7 @@ import {
   type RefObject,
 } from "react";
 import { useTouchControls } from "./useTouchControls";
+import { scrollResultsWithKeyboard } from "./search-touch";
 import { ControlNames } from "./components/ControlNames";
 import { flushSync } from "react-dom";
 import {
@@ -186,6 +187,11 @@ function MenuBack({ fallback = "/programs" }: { fallback?: string }) {
 function usePageScroll() {
   const stage = useRef<HTMLElement>(null);
   const lockedTop = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const previous = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => { window.history.scrollRestoration = previous; };
+  }, []);
   return useMemo(() => {
     const freeze = (top: number) => {
       lockedTop.current = top;
@@ -327,11 +333,12 @@ function SearchSheet({
   const results = useMemo(() => search(deferredQuery), [deferredQuery]);
   const [editing, setEditing] = useState(false);
   const reducedMotion = useReducedMotionConfig();
+  const dismissArea = useRef<HTMLDivElement>(null);
   const toolbar = useRef<HTMLFormElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const resultPane = useRef<HTMLDivElement>(null);
   const resultContent = useRef<HTMLDivElement>(null);
   const [resultHeight, setResultHeight] = useState(0);
-  const backdropPress = useRef(false);
   const closing = useRef<Promise<unknown> | null>(null);
   const canEdit = results.some((result) => result.kind !== "control");
   const locationRef = useRef(location);
@@ -345,7 +352,7 @@ function SearchSheet({
     };
     sheet.setAttribute("data-closing", "");
     // Keep the dialog in the top layer until the exit finishes, including on Safari.
-    const animations = sheet.getAnimations();
+    const animations = panel.current?.getAnimations() ?? [];
     if (!animations.length) {
       finish();
       return;
@@ -376,44 +383,49 @@ function SearchSheet({
   }, [searchOpen, location.search]);
   useLayoutEffect(() => {
     const viewport = window.visualViewport;
-    const sheet = dialog.current;
+    const sheet = panel.current;
+    const outside = dismissArea.current;
     const bar = toolbar.current;
+    const list = resultPane.current;
     const content = resultContent.current;
-    if (!searchOpen || !sheet || !bar || !content) return;
-    const measureResults = () => {
-      const style = getComputedStyle(sheet);
-      const insets = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
-        parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
-      const maxHeight = parseFloat(style.maxHeight);
-      const available = Math.max(0, maxHeight - insets - bar.offsetHeight);
-      const gap = parseFloat(style.getPropertyValue("--search-results-gap"));
-      const height = content.offsetHeight ? content.offsetHeight + gap : 0;
-      setResultHeight(Number.isFinite(available) ? Math.min(height, available) : height);
-    };
+    if (!searchOpen || !sheet || !outside || !bar || !list || !content) return;
+    const touchWebKit = navigator.maxTouchPoints > 0 && CSS.supports("-webkit-touch-callout", "none");
+    const keyboardOpen = () => !!viewport && document.documentElement.clientHeight - viewport.height > 130;
+    const measureResults = () => setResultHeight(content.offsetHeight);
     const updatePosition = () => {
-      if (sheet.hasAttribute("data-closing")) return;
+      if (dialog.current?.hasAttribute("data-closing")) return;
       if (viewport) {
         const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
         sheet.style.setProperty("--search-viewport-offset", `${offset}px`);
         sheet.style.setProperty("--search-viewport-height", `${viewport.height}px`);
       }
-      measureResults();
+      // An iOS keyboard can give the native viewport the gesture before the inner list.
+      list.toggleAttribute("data-keyboard-scroll", touchWebKit && keyboardOpen());
     };
     updatePosition();
+    measureResults();
     const observer = new ResizeObserver(measureResults);
     observer.observe(content);
-    observer.observe(bar);
+    const stopViewportPan = (event: TouchEvent) => {
+      if (event.cancelable && event.touches.length === 1) event.preventDefault();
+    };
+    outside.addEventListener("touchmove", stopViewportPan, { passive: false });
+    bar.addEventListener("touchmove", stopViewportPan, { passive: false });
+    const stopResultTouch = touchWebKit ? scrollResultsWithKeyboard(list, keyboardOpen, !!reducedMotion) : undefined;
     window.addEventListener("resize", updatePosition);
     viewport?.addEventListener("resize", updatePosition);
     viewport?.addEventListener("scroll", updatePosition);
 
     return () => {
       observer.disconnect();
+      stopResultTouch?.();
+      outside.removeEventListener("touchmove", stopViewportPan);
+      bar.removeEventListener("touchmove", stopViewportPan);
       window.removeEventListener("resize", updatePosition);
       viewport?.removeEventListener("resize", updatePosition);
       viewport?.removeEventListener("scroll", updatePosition);
     };
-  }, [searchOpen, dialog]);
+  }, [searchOpen, dialog, reducedMotion]);
   useLayoutEffect(() => {
     if (resultPane.current) resultPane.current.scrollTop = 0;
   }, [deferredQuery]);
@@ -424,25 +436,12 @@ function SearchSheet({
       state: location.state,
     });
   };
-  const hitsBackdrop = (event: { target: EventTarget; currentTarget: HTMLDialogElement; clientX: number; clientY: number }) => {
-    if (event.target !== event.currentTarget) return false;
-    const { left, right, top, bottom } = event.currentTarget.getBoundingClientRect();
-    return event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom;
-  };
   return (
     <dialog
       id="search-sheet"
-      className="search-sheet"
+      className="search-layer"
       ref={dialog}
       aria-label={t("searchShort")}
-      onPointerDown={event => {
-        backdropPress.current = hitsBackdrop(event);
-      }}
-      onPointerCancel={() => { backdropPress.current = false; }}
-      onClick={event => {
-        if (backdropPress.current && hitsBackdrop(event)) closeSearch();
-        backdropPress.current = false;
-      }}
       onCancel={(event) => {
         event.preventDefault();
         closeSearch();
@@ -465,60 +464,62 @@ function SearchSheet({
         else navigate("/programs", { replace: true });
       }}
     >
-      <form
-        ref={toolbar}
-        className="search-toolbar"
-        role="search"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <div className="search-box">
-          <SearchIcon size={22} aria-hidden="true" />
-          <input
-            ref={input}
-            type="search"
-            autoFocus
-            autoComplete="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            enterKeyHint="search"
-            aria-label={t("search")}
-            placeholder={t("searchShort")}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          {query && (
-            <button
-              type="button"
-              aria-label={t("clear")}
-              onClick={() => {
-                setQuery("");
-                input.current?.focus();
-              }}
-            >
-              <X size={19} aria-hidden="true" />
-            </button>
-          )}
-        </div>
-        {(editing || canEdit) && <FavoriteModeButton editing={editing} onToggle={() => setEditing(!editing)} />}
-        <button
-          type="button"
-          className="search-cancel"
-          onClick={closeSearch}
+      <div ref={dismissArea} className="search-dismiss-area" aria-hidden="true" onClick={closeSearch} />
+      <div ref={panel} className="search-sheet">
+        <form
+          ref={toolbar}
+          className="search-toolbar"
+          role="search"
+          onSubmit={(event) => event.preventDefault()}
         >
-          {t("cancel")}
-        </button>
-      </form>
-      <p className="sr-only" role="status" aria-atomic="true">
-        {deferredQuery && query === deferredQuery ? `${results.length} ${locale === "tr" ? "sonuç" : "results"}` : ""}
-      </p>
-      <motion.div
-        className="search-results"
-        aria-busy={query !== deferredQuery}
-        initial={false}
-        animate={{ height: resultHeight }}
-        transition={{ duration: reducedMotion ? 0 : 0.14, ease: "easeOut" }}
-      >
-        <div ref={resultPane} className="search-results-viewport">
+          <div className="search-box">
+            <SearchIcon size={22} aria-hidden="true" />
+            <input
+              ref={input}
+              type="search"
+              autoFocus
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              enterKeyHint="search"
+              aria-label={t("search")}
+              placeholder={t("searchShort")}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label={t("clear")}
+                onClick={() => {
+                  setQuery("");
+                  input.current?.focus();
+                }}
+              >
+                <X size={19} aria-hidden="true" />
+              </button>
+            )}
+          </div>
+          {(editing || canEdit) && <FavoriteModeButton editing={editing} onToggle={() => setEditing(!editing)} />}
+          <button
+            type="button"
+            className="search-cancel"
+            onClick={closeSearch}
+          >
+            {t("cancel")}
+          </button>
+        </form>
+        <p className="sr-only" role="status" aria-atomic="true">
+          {deferredQuery && query === deferredQuery ? `${results.length} ${locale === "tr" ? "sonuç" : "results"}` : ""}
+        </p>
+        <motion.div
+          ref={resultPane}
+          className="search-results-viewport"
+          aria-busy={query !== deferredQuery}
+          initial={false}
+          animate={{ height: resultHeight, marginBottom: resultHeight > 0 ? 14 : 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.14, ease: "easeOut" }}
+        >
           <div ref={resultContent} className="search-results-content">
             {deferredQuery && !results.length && (
               <p className="empty-state">{t("noResults")}</p>
@@ -548,8 +549,8 @@ function SearchSheet({
               </ul>
             )}
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </dialog>
   );
 }

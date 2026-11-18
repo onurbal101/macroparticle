@@ -61,6 +61,15 @@ test("only the results list scrolls while search is open", async ({ page }) => {
   await page.getByRole("searchbox").fill("buhar");
   const results = page.locator(".search-results-viewport");
   await expect.poll(() => results.evaluate(element => element.clientHeight)).toBeGreaterThan(100);
+  const touchCanScroll = await page.locator(".search-layer").evaluate(layer => {
+    const tryPan = (selector: string) => {
+      const move = new Event("touchmove", { bubbles: true, cancelable: true });
+      Object.defineProperty(move, "touches", { value: [{ clientY: 100 }] });
+      return layer.querySelector(selector)!.dispatchEvent(move);
+    };
+    return [tryPan(".search-dismiss-area"), tryPan(".search-toolbar"), tryPan(".search-results-viewport")];
+  });
+  expect(touchCanScroll).toEqual([false, false, true]);
   const box = await results.boundingBox();
   await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await page.mouse.wheel(0, 150);

@@ -168,12 +168,21 @@ p {
 }
 .page-stage[data-search-scroll-lock] {
   position: fixed;
-  inset: var(--frozen-page-top) 0 0;
+  inset: 0;
   max-width: var(--app-max-width);
   margin-inline: auto;
 }
+.page-stage[data-search-scroll-lock] > .page-view {
+  top: var(--frozen-page-top);
+}
 :root:has(.page-stage[data-search-scroll-lock]) {
+  overflow: hidden;
   overscroll-behavior: none;
+}
+@media (hover: none) and (pointer: coarse) {
+  :root:has(.page-stage[data-search-scroll-lock]) {
+    scrollbar-width: none;
+  }
 }
 .page-view {
   position: relative;
@@ -519,10 +528,30 @@ p {
     backdrop-filter: url("#dock-refraction") blur(5px) saturate(155%);
   }
 }
+.search-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.search-dismiss-area {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
 .search-sheet {
   --search-edge: max(14px, env(safe-area-inset-bottom));
-  --search-results-gap: 14px;
   position: fixed;
+  display: flex;
+  flex-direction: column-reverse;
   inset: auto 12px calc(var(--search-viewport-offset, 0px) + var(--search-edge));
   width: min(660px, calc(100% - 24px));
   max-height: min(80dvh, calc(var(--search-viewport-height, 100dvh) - var(--search-edge) - max(12px, env(safe-area-inset-top))));
@@ -533,31 +562,24 @@ p {
   background: var(--background);
   color: var(--ink);
   box-shadow: 0 14px 65px #0002;
-  overflow: hidden;
+  overflow: clip;
   opacity: 0;
   transform: translateY(24px) scale(0.98);
   transition:
     opacity 180ms ease,
     transform var(--search-slide-duration) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.search-sheet[open] {
-  display: flex;
-  flex-direction: column-reverse;
-}
-.search-sheet[open]:not([data-closing]) {
+.search-layer[open]:not([data-closing]) .search-sheet {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: none;
 }
-.search-sheet[data-closing] {
+.search-layer[data-closing] .search-sheet {
   pointer-events: none;
   transition:
     opacity 180ms ease-in calc(var(--search-slide-duration) - 180ms),
     transform var(--search-slide-duration) cubic-bezier(0.8, 0, 0.8, 0.2);
 }
-.search-sheet:modal {
-  overscroll-behavior: contain;
-}
-.search-sheet::backdrop {
+.search-layer::backdrop {
   background: transparent;
   overflow: hidden;
   overscroll-behavior: contain;
@@ -577,16 +599,16 @@ p {
     opacity var(--fade-duration) ease-out,
     visibility 0s var(--fade-duration);
 }
-.search-backdrop:has(+ .search-sheet[open]:not([data-closing])) {
+.search-backdrop:has(+ .search-layer[open]:not([data-closing])) {
   visibility: visible;
   opacity: 1;
   transition-delay: 0s;
 }
-.search-backdrop:has(+ .search-sheet[data-closing]) {
+.search-backdrop:has(+ .search-layer[data-closing]) {
   --fade-duration: var(--search-slide-duration);
 }
 @starting-style {
-  .search-sheet[open]:not([data-closing]) {
+  .search-layer[open]:not([data-closing]) .search-sheet {
     opacity: 0;
     transform: translateY(24px) scale(0.98);
   }
@@ -596,6 +618,7 @@ p {
   display: flex;
   align-items: center;
   gap: 12px;
+  touch-action: pan-x pinch-zoom;
 }
 .search-box {
   display: flex;
@@ -638,18 +661,15 @@ p {
   font-size: 18px;
   color: var(--accent);
 }
-.search-results {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
 .search-results-viewport {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
-  margin-block-end: var(--search-results-gap);
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.search-results-viewport[data-keyboard-scroll] {
+  touch-action: pinch-zoom;
 }
 .search-results-content {
   display: flow-root;
