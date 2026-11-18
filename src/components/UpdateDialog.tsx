@@ -1,14 +1,40 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDownToLine } from "lucide-react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 import type { Locale } from "../data/schema";
 import { messages } from "../i18n";
 
-export function UpdateDialog({ locale, blocked }: { locale: Locale; blocked: boolean }) {
+const updateDialogId = "app-update-dialog";
+const OpenUpdateContext = createContext<(() => void) | null>(null);
+
+export function UpdateButton({ label }: { label: string }) {
+  const openUpdate = useContext(OpenUpdateContext);
+  if (!openUpdate) return null;
+  return (
+    <button
+      type="button"
+      className="update-trigger"
+      aria-label={label}
+      title={label}
+      aria-haspopup="dialog"
+      aria-controls={updateDialogId}
+      onClick={openUpdate}
+    >
+      <ArrowDownToLine size={23} aria-hidden="true" />
+    </button>
+  );
+}
+
+export function UpdatePrompt({ locale, deferAutomatic, children }: {
+  locale: Locale;
+  deferAutomatic: boolean;
+  children: ReactNode;
+}) {
   const t = messages[locale];
   const dialog = useRef<HTMLDialogElement>(null);
   const reloading = useRef(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [presentation, setPresentation] = useState<"automatic" | "manual" | "later">("automatic");
+  const openUpdate = useCallback(() => setPresentation("manual"), []);
   const [state, setState] = useState<"idle" | "updating" | "error">("idle");
   const updating = state === "updating";
   const reloadPage = () => {
@@ -37,43 +63,48 @@ export function UpdateDialog({ locale, blocked }: { locale: Locale; blocked: boo
     }
   }
 
+  const showDialog = available && (updating || presentation === "manual" || (presentation === "automatic" && !deferAutomatic));
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
-    if (available && !dismissed && (!blocked || updating)) {
+    if (showDialog) {
       if (!element.open) element.showModal();
     } else if (element.open) {
       element.close();
     }
-  }, [available, blocked, dismissed, updating]);
+  }, [showDialog]);
 
   return (
-    <dialog
-      ref={dialog}
-      className="update-dialog"
-      aria-labelledby="update-title"
-      aria-describedby="update-description"
-      onCancel={event => {
-        if (updating) event.preventDefault();
-        else setDismissed(true);
-      }}
-    >
-      <div className="update-symbol" aria-hidden="true"><ArrowDownToLine size={26} /></div>
-      <h2 id="update-title">{t.update}</h2>
-      <p id="update-description" role="status">{state === "error" ? t.updateError : t.updateDescription}</p>
-      <div className="update-actions">
-        <button type="button" autoFocus disabled={updating} onClick={() => setDismissed(true)}>
-          {t.updateLater}
-        </button>
-        <button
-          type="button"
-          className="update-confirm"
-          aria-disabled={updating || undefined}
-          onClick={applyUpdate}
-        >
-          {updating ? t.updating : t.updateAction}
-        </button>
-      </div>
-    </dialog>
+    <OpenUpdateContext.Provider value={available ? openUpdate : null}>
+      {children}
+      <dialog
+        id={updateDialogId}
+        ref={dialog}
+        className="update-dialog"
+        aria-labelledby="update-title"
+        aria-describedby="update-description"
+        onCancel={event => {
+          if (updating) event.preventDefault();
+          else setPresentation("later");
+        }}
+      >
+        <div className="update-symbol" aria-hidden="true"><ArrowDownToLine size={26} /></div>
+        <h2 id="update-title">{t.update}</h2>
+        <p id="update-description" role="status">{state === "error" ? t.updateError : t.updateDescription}</p>
+        <div className="update-actions">
+          <button type="button" autoFocus disabled={updating} onClick={() => setPresentation("later")}>
+            {t.updateLater}
+          </button>
+          <button
+            type="button"
+            className="update-confirm"
+            aria-disabled={updating || undefined}
+            onClick={applyUpdate}
+          >
+            {updating ? t.updating : t.updateAction}
+          </button>
+        </div>
+      </dialog>
+    </OpenUpdateContext.Provider>
   );
 }

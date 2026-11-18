@@ -73,7 +73,7 @@ import { Disclosure } from "./components/Disclosure";
 import { ControlPanel } from "./components/ControlPanel";
 import { Simulator } from "./components/Simulator";
 import { PageMetadata } from "./components/PageMetadata";
-import { UpdateDialog } from "./components/UpdateDialog";
+import { UpdateButton, UpdatePrompt } from "./components/UpdateDialog";
 import { Navigation, tabs, type Section } from "./components/Navigation";
 import { useSimulator } from "./simulator";
 import { formatSeconds, programmeDuration } from "./time";
@@ -512,23 +512,27 @@ export default function App() {
             {t("skip")}
           </a>
           <div className="app-shell">
-            <main id="content" className="page-stage" tabIndex={-1}>
-              {storageError && (
-                <p className="notice" role="status">
-                  {t("storageError")}
-                </p>
-              )}
-              <AnimatedRoutes location={background} />
-            </main>
-            <Navigation
-              section={sectionFor(location)}
+            <UpdatePrompt
               locale={locale}
-              onNavigate={selectTab}
-              onSearch={openSearch}
-            />
-            <div className="search-backdrop" aria-hidden="true" />
-            <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
-            <UpdateDialog locale={locale} blocked={location.pathname === "/search" || (isSimulator(location.pathname) && machine.state.status === "running")} />
+              deferAutomatic={location.pathname === "/search" || (isSimulator(location.pathname) && machine.state.status === "running")}
+            >
+              <main id="content" className="page-stage" tabIndex={-1}>
+                {storageError && (
+                  <p className="notice" role="status">
+                    {t("storageError")}
+                  </p>
+                )}
+                <AnimatedRoutes location={background} />
+              </main>
+              <Navigation
+                section={sectionFor(location)}
+                locale={locale}
+                onNavigate={selectTab}
+                onSearch={openSearch}
+              />
+              <div className="search-backdrop" aria-hidden="true" />
+              <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
+            </UpdatePrompt>
           </div>
         </LazyMotion>
       </MotionConfig>
@@ -537,10 +541,14 @@ export default function App() {
 }
 
 function PageHeading({ title, action }: { title: string; action?: ReactNode }) {
+  const { t } = useApp();
   return (
     <div className="page-heading">
       <h1 tabIndex={-1}>{title}</h1>
-      {action}
+      <div className="page-heading-actions">
+        {action}
+        <UpdateButton label={t("update")} />
+      </div>
     </div>
   );
 }
@@ -1022,12 +1030,13 @@ function Instruction({ record }: { record: ApplianceRecord }) {
   const heading = record.title[locale];
   return (
     <>
-      <MenuBack fallback={recordParentPath(record)} />
-      <div className="instruction-heading">
-        {record.code && <span className="detail-number">{record.code}</span>}
-        <PageHeading title={heading} />
-        <ProgramFavorite id={record.id} />
-      </div>
+      <header className="instruction-header">
+        <MenuBack fallback={recordParentPath(record)} />
+        <div className="instruction-heading">
+          {record.code && <span className="detail-number">{record.code}</span>}
+          <PageHeading title={heading} action={<ProgramFavorite id={record.id} />} />
+        </div>
+      </header>
       <div
         className={`instruction-layout ${!actions.length ? "article-layout" : ""}`}
       >
