@@ -45,7 +45,9 @@ export function simulatorRecord(state: SimulatorState): ApplianceRecord | undefi
   return simulatorRecords(state)[state.index - 1];
 }
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+const wrap = (index: number, positions: number) => (index + positions) % positions;
 const ascendingPowers = [...knowledge.powerLevels].sort((a, b) => a - b);
+const maximumDuration = 5940;
 
 function alignDial(state: SimulatorState, angle = 0): SimulatorState {
   // Use the closest equivalent angle when a new scale replaces the old one.
@@ -91,11 +93,12 @@ export function simulatorReducer(state: SimulatorState, action: Action): Simulat
   if (state.locked) return state;
   if (action.type === "adjust") {
     const direction = Math.sign(action.direction);
+    if (!direction) return state;
     const turn = (next: SimulatorState, steps: number, positions: number) =>
       steps && positions ? { ...next, dialRotation: state.dialRotation + (360 * steps) / positions } : next;
     if (state.status === "running" || state.status === "paused") {
       if (state.seconds === null) return state;
-      const max = state.mode === "deodorization" ? 900 : 5940;
+      const max = state.mode === "deodorization" ? 900 : maximumDuration;
       const remaining = remainingSeconds(state, action.now) ?? 0;
       if (!remaining) return state;
       const seconds = clamp(remaining + direction * 30, 1, max);
@@ -107,13 +110,14 @@ export function simulatorReducer(state: SimulatorState, action: Action): Simulat
     }
     switch (state.phase) {
       case "group": {
-        const group = clamp(state.group + direction, 1, 2);
-        return turn(selectProgramme({ ...state, group, index: 1 }), group - state.group, 2);
+        const group = 1 + wrap(state.group - 1 + direction, 2);
+        return turn(selectProgramme({ ...state, group, index: 1 }), direction, 2);
       }
       case "programme": {
         const positions = simulatorRecords(state).length;
-        const index = clamp(state.index + direction, 1, positions);
-        return turn(selectProgramme({ ...state, index }), index - state.index, positions);
+        if (positions < 2) return state;
+        const index = 1 + wrap(state.index - 1 + direction, positions);
+        return turn(selectProgramme({ ...state, index }), direction, positions);
       }
       case "quantity": {
         const record = simulatorRecord(state);
@@ -121,31 +125,30 @@ export function simulatorReducer(state: SimulatorState, action: Action): Simulat
         if (!range) return state;
         const increment = range.increment ?? 100;
         const positions = range.values.length || Math.ceil((range.max! - range.min!) / increment) + 1;
+        if (positions < 2) return state;
         const current = range.values.length
           ? range.values.indexOf(state.quantity)
           : Math.ceil((state.quantity - range.min!) / increment);
-        const index = clamp(current + direction, 0, positions - 1);
+        const index = wrap(current + direction, positions);
         const quantity = range.values[index] ?? Math.min(range.min! + index * increment, range.max!);
-        return turn({ ...state, quantity, seconds: programmeDuration(record, quantity) }, index - current, positions);
+        return turn({ ...state, quantity, seconds: programmeDuration(record, quantity) }, direction, positions);
       }
       case "power": {
         const current = ascendingPowers.indexOf(state.power);
-        const index = clamp(current + direction, 0, ascendingPowers.length - 1);
-        return turn({ ...state, power: ascendingPowers[index] }, index - current, ascendingPowers.length);
+        const index = wrap(current + direction, ascendingPowers.length);
+        return turn({ ...state, power: ascendingPowers[index] }, direction, ascendingPowers.length);
       }
       case "duration": {
-        const current = state.seconds ?? 0;
-        const seconds = clamp(current + direction * 30, 0, 5940);
-        return turn({ ...state, seconds }, seconds - current, 60);
+        const current = (state.seconds ?? 0) / 30;
+        const seconds = 30 * wrap(current + direction, maximumDuration / 30 + 1);
+        return turn({ ...state, seconds }, direction, 2);
       }
       case "memory": {
-        const slot = clamp(state.slot + direction, 0, 1);
-        return turn({ ...state, slot }, slot - state.slot, 2);
+        const slot = wrap(state.slot + direction, 2);
+        return turn({ ...state, slot }, direction, 2);
       }
-      case "clock-format": {
-        const hour12 = direction < 0;
-        return turn({ ...state, hour12 }, Number(state.hour12) - Number(hour12), 2);
-      }
+      case "clock-format":
+        return turn({ ...state, hour12: !state.hour12 }, direction, 2);
       case "clock-hour":
         return turn({ ...state, clockDraftUtc: state.clockDraftUtc + direction * 3600000 }, direction, state.hour12 ? 12 : 24);
       case "clock-minute":
@@ -163,7 +166,7 @@ export function simulatorReducer(state: SimulatorState, action: Action): Simulat
   if (id === "start") {
     if (state.status === "running") {
       if (state.seconds === null) return state;
-      const seconds = Math.min((remainingSeconds(state, now) ?? 0) + 30, state.mode === "deodorization" ? 900 : 5940);
+      const seconds = Math.min((remainingSeconds(state, now) ?? 0) + 30, state.mode === "deodorization" ? 900 : maximumDuration);
       return { ...state, seconds, deadlineUtc: new Date(now + seconds * 1000).toISOString() };
     }
     if (state.status === "paused") return start(state, now);

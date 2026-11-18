@@ -3,6 +3,7 @@ import { LockKeyhole, LockKeyholeOpen } from "lucide-react";
 import type { Locale } from "../data/schema";
 
 const holdMilliseconds = 3000;
+const shortPressMilliseconds = 250;
 const isHoldKey = (key: string) => key === " " || key === "Enter";
 
 export function ChildLockKey({ locked, label, locale, onToggle, onSelect }: {
@@ -14,8 +15,10 @@ export function ChildLockKey({ locked, label, locale, onToggle, onSelect }: {
 }) {
   const hintId = useId();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdStartedAt = useRef(0);
   const completedHold = useRef(false);
   const [holding, setHolding] = useState(false);
+  const [shortRelease, setShortRelease] = useState(false);
   const [confirmation, setConfirmation] = useState(0);
 
   const cancelHold = useCallback(() => {
@@ -23,6 +26,7 @@ export function ChildLockKey({ locked, label, locale, onToggle, onSelect }: {
     clearTimeout(timer.current);
     timer.current = null;
     setHolding(false);
+    setShortRelease(performance.now() - holdStartedAt.current < shortPressMilliseconds);
   }, []);
 
   useEffect(() => {
@@ -39,6 +43,8 @@ export function ChildLockKey({ locked, label, locale, onToggle, onSelect }: {
   const beginHold = () => {
     if (timer.current !== null) return;
     completedHold.current = false;
+    holdStartedAt.current = performance.now();
+    setShortRelease(false);
     setHolding(true);
     timer.current = setTimeout(() => {
       timer.current = null;
@@ -99,6 +105,7 @@ export function ChildLockKey({ locked, label, locale, onToggle, onSelect }: {
             <span data-fill-label={label} />
           </span>
         </span>
+        {shortRelease && <span className="child-lock-cancellation" aria-hidden="true" />}
         {confirmation > 0 && <span key={confirmation} className="child-lock-confirmation" aria-hidden="true" />}
       </button>
       <span id={hintId} className="sr-only">

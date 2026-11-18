@@ -12,6 +12,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { useTouchControls } from "./useTouchControls";
 import { flushSync } from "react-dom";
 import {
   MotionConfig,
@@ -455,6 +456,7 @@ function SearchSheet({
 }
 
 export default function App() {
+  const touchControls = useTouchControls();
   const [preferences, setPreferences] = useState(() => parsePreferences(null));
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   useLayoutEffect(() => {
@@ -556,7 +558,7 @@ export default function App() {
           <a className="skip-link" href="#content">
             {t("skip")}
           </a>
-          <div className="app-shell">
+          <div className="app-shell" {...touchControls}>
             <UpdatePrompt
               locale={locale}
               deferAutomatic={location.pathname === "/search" || (isSimulator(location.pathname) && machine.state.status === "running")}
