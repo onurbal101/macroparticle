@@ -9,7 +9,12 @@
     <meta name="apple-mobile-web-app-title" content="Mikrodalga" />
     <script>
       try {
-        const theme = JSON.parse(localStorage.getItem("microwave-companion-v1") || "{}")?.theme;
+        const preferences = JSON.parse(localStorage.getItem("microwave-companion-v1") || "{}");
+        const theme = preferences?.theme;
+        const reduceMotion = preferences?.reduceMotion;
+        if (reduceMotion === "on" || reduceMotion === "off") {
+          document.documentElement.dataset.reduceMotion = reduceMotion;
+        }
         if (theme === "light" || theme === "dark") {
           document.querySelector('meta[name="color-scheme"]').content = theme;
         }

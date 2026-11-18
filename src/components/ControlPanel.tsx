@@ -14,7 +14,7 @@ import {
   WavesVertical,
 } from "lucide-react";
 import { knowledge } from "../data/schema";
-import { m as motion } from "motion/react";
+import { m as motion, useReducedMotionConfig } from "motion/react";
 import { localClock, useUtcNow } from "../time";
 import type { Locale } from "../data/schema";
 import { ChildLockKey } from "./ChildLockKey";
@@ -55,6 +55,7 @@ export function ControlPanel({
   locked?: boolean;
   dialRotation?: number;
 }) {
+  const reducedMotion = useReducedMotionConfig();
   const Key = onSelect ? "button" : "div";
   const buttonClass = (id: string) =>
     `panel-key ${active === id ? "highlighted" : ""}`;
@@ -117,7 +118,7 @@ export function ControlPanel({
             aria-hidden="true"
             initial={false}
             animate={{ rotate: dialRotation }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
+            transition={{ duration: reducedMotion ? 0 : 0.22, ease: "easeOut" }}
           >
             <span />
           </motion.div>

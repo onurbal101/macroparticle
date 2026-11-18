@@ -1,5 +1,5 @@
 import { memo, useLayoutEffect, useRef, useState } from "react";
-import { m, useReducedMotion } from "motion/react";
+import { m, useReducedMotionConfig } from "motion/react";
 import { BookOpen, List, Microwave, Search, UserRound } from "lucide-react";
 import type { Locale } from "../data/schema";
 import { messages } from "../i18n";
@@ -24,7 +24,7 @@ export const Navigation = memo(function Navigation({ section, locale, onNavigate
   const t = messages[locale];
   const nav = useRef<HTMLElement>(null);
   const [indicator, setIndicator] = useState<Indicator>();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionConfig();
   useLayoutEffect(() => {
     const element = nav.current;
     if (!element) return;

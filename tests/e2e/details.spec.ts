@@ -50,6 +50,30 @@ test("search reports results and returns focus to its button", async ({ page }) 
   await expect(search).toBeFocused();
 });
 
+test("Reduce Motion follows the device and saves explicit choices", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/account");
+  await page.getByRole("link", { name: "Hareketi azalt Sistem" }).click();
+  const system = page.getByRole("radio", { name: "Sistem", exact: true });
+  const searchBlur = page.locator(".search-backdrop");
+  await expect(system).toBeChecked();
+  await expect(searchBlur).toHaveCSS("transition-property", "none");
+  await page.getByRole("radio", { name: "Kapalı", exact: true }).press("Space");
+  await expect(searchBlur).toHaveCSS("transition-property", "opacity, visibility");
+
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const on = page.getByRole("radio", { name: "Açık", exact: true });
+  await on.press("Space");
+  await page.reload();
+  await expect(on).toBeChecked();
+  await expect(searchBlur).toHaveCSS("transition-property", "none");
+
+  await system.press("Space");
+  await expect(searchBlur).toHaveCSS("transition-property", "opacity, visibility");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(searchBlur).toHaveCSS("transition-property", "none");
+});
+
 test("the navigation indicator moves only when the selected tab changes", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference", colorScheme: "dark" });
   await page.goto("/programs");

@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
   type RefObject,
 } from "react";
@@ -18,7 +19,7 @@ import {
   domAnimation,
   AnimatePresence,
   m as motion,
-  useReducedMotion,
+  useReducedMotionConfig,
 } from "motion/react";
 import {
   Link as RouterLink,
@@ -46,6 +47,7 @@ import {
   Languages,
   Microwave,
   Monitor,
+  PersonStanding,
   Search as SearchIcon,
   ShieldCheck,
   Snowflake,
@@ -84,6 +86,14 @@ type AppContext = {
 };
 const Context = createContext<AppContext>(null!);
 const useApp = () => useContext(Context);
+const motionQuery = "(prefers-reduced-motion: reduce)";
+const getSystemMotion = () => window.matchMedia(motionQuery).matches;
+const subscribeToSystemMotion = (update: () => void) => {
+  const media = window.matchMedia(motionQuery);
+  media.addEventListener("change", update);
+  return () => media.removeEventListener("change", update);
+};
+const motionLabels = { system: "motionSystem", off: "motionOff", on: "motionOn" } as const;
 const functions = [
   "quick-defrost",
   "auto-cook",
@@ -180,7 +190,7 @@ function PageScreen({
   positions: Map<string, number>;
   restore: boolean;
 }) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionConfig();
   const view = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     window.scrollTo(0, restore ? positions.get(location.key) || 0 : 0);
@@ -240,6 +250,7 @@ function AnimatedRoutes({ location }: { location: RouterLocation }) {
         <Route path="/account" element={<Account />} />
         <Route path="/account/favorites" element={<Favorites />} />
         <Route path="/account/appearance" element={<AppearanceSettings />} />
+        <Route path="/account/reduce-motion" element={<MotionSettings />} />
         <Route path="/account/language" element={<LanguageSettings />} />
         <Route
           path="/favorites"
@@ -430,6 +441,11 @@ export default function App() {
   const locale = preferences.locale;
   const t = (key: MessageKey) => messages[locale][key];
   const machine = useSimulator();
+  const systemReducesMotion = useSyncExternalStore(subscribeToSystemMotion, getSystemMotion, () => false);
+  const reduceMotion = preferences.reduceMotion === "on" || (preferences.reduceMotion === "system" && systemReducesMotion);
+  useLayoutEffect(() => {
+    if (preferencesLoaded) document.documentElement.dataset.reduceMotion = preferences.reduceMotion;
+  }, [preferences.reduceMotion, preferencesLoaded]);
   useLayoutEffect(() => {
     if (!preferencesLoaded) return;
     const scheme = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"]');
@@ -505,7 +521,7 @@ export default function App() {
       value={{ locale, t, preferences, change: setPreferences, machine }}
     >
       <PageMetadata locale={locale} />
-      <MotionConfig reducedMotion="user">
+      <MotionConfig reducedMotion={reduceMotion ? "always" : "never"}>
         <LazyMotion features={domAnimation} strict>
           <a className="skip-link" href="#content">
             {t("skip")}
@@ -594,7 +610,7 @@ function Home() {
 
 function FavoriteModeButton({ editing, onToggle }: { editing: boolean; onToggle: () => void }) {
   const { t } = useApp();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionConfig();
   return (
     <motion.button
       type="button"
@@ -614,7 +630,7 @@ function FavoriteModeButton({ editing, onToggle }: { editing: boolean; onToggle:
 
 function FavoriteStar({ saved, decorative = false }: { saved: boolean; decorative?: boolean }) {
   const { t } = useApp();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionConfig();
   return (
     <motion.span
       className={`favorite-star${saved ? " saved" : ""}`}
@@ -643,7 +659,7 @@ function toggleFavorite(previous: Preferences, id: string): Preferences {
 function ProgramFavorite({ id }: { id: string }) {
   const { preferences, change, t } = useApp();
   const saved = preferences.favorites.includes(id);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionConfig();
   return (
     <motion.button
       type="button"
@@ -810,6 +826,7 @@ function Account() {
       </ul>
       <ul className="menu-list settings-list" role="list">
         <SettingsLink to="/account/appearance" label={t("appearance")} value={t(preferences.theme)} icon={Monitor} color="indigo" />
+        <SettingsLink to="/account/reduce-motion" label={t("reduceMotion")} value={t(motionLabels[preferences.reduceMotion])} icon={PersonStanding} color="indigo" />
         <SettingsLink to="/account/language" label={t("language")} value={languageNames[locale]} icon={Languages} color="blue" />
       </ul>
     </div>
@@ -893,6 +910,35 @@ function LanguageSettings() {
                   onChange={() => change((previous) => ({ ...previous, locale: value }))}
                 />
                 <span lang={value}>{languageNames[value]}</span>
+                <Check size={21} strokeWidth={2.5} aria-hidden="true" />
+              </label>
+            </li>
+          ))}
+        </ul>
+      </fieldset>
+    </div>
+  );
+}
+
+function MotionSettings() {
+  const { t, preferences, change } = useApp();
+  return (
+    <div className="account-settings">
+      <MenuBack fallback="/account" />
+      <PageHeading title={t("reduceMotion")} />
+      <fieldset aria-label={t("reduceMotion")}>
+        <ul className="menu-list settings-list" role="list">
+          {(["system", "off", "on"] as const).map(value => (
+            <li key={value}>
+              <label className="settings-choice">
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="reduce-motion"
+                  checked={preferences.reduceMotion === value}
+                  onChange={() => change(previous => ({ ...previous, reduceMotion: value }))}
+                />
+                <span>{t(motionLabels[value])}</span>
                 <Check size={21} strokeWidth={2.5} aria-hidden="true" />
               </label>
             </li>

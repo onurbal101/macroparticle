@@ -4,6 +4,7 @@ import { recordById } from "./data/schema";
 const preferenceSchema = z.object({
   locale: z.enum(["tr", "en"]).default("tr"),
   theme: z.enum(["system", "light", "dark"]).default("system"),
+  reduceMotion: z.enum(["system", "off", "on"]).catch("system"),
   favorites: z.array(z.string()).default([]),
   history: z.array(z.string()).default([]),
   notes: z.record(z.string(), z.string()).default({}),
@@ -13,6 +14,7 @@ export const storageKey = "microwave-companion-v1";
 export const emptyPreferences: Preferences = {
   locale: "tr",
   theme: "system",
+  reduceMotion: "system",
   favorites: [],
   history: [],
   notes: {},

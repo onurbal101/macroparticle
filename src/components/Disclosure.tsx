@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
-import { m as motion, useReducedMotion } from "motion/react";
+import { m as motion, useReducedMotionConfig } from "motion/react";
 import { ChevronRight } from "lucide-react";
 
 export function Disclosure({ label, className, children }: {
@@ -9,7 +9,7 @@ export function Disclosure({ label, className, children }: {
 }) {
   const [open, setOpen] = useState(false);
   const contentId = useId();
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReducedMotionConfig();
   const transition = { duration: reducedMotion ? 0 : 0.24, ease: "easeInOut" as const };
 
   return (

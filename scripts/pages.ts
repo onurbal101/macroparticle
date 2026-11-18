@@ -72,7 +72,7 @@ export function staticPages(): Plugin {
       const template = String(index.source);
       const pages = publicPages();
       const paths = [
-        ...pages.map(page => page.path), "/programs", "/account", "/account/favorites", "/account/language", "/account/appearance", "/search", "/404",
+        ...pages.map(page => page.path), "/programs", "/account", "/account/favorites", "/account/language", "/account/appearance", "/account/reduce-motion", "/search", "/404",
         "/controls", ...knowledge.controls.flatMap(control => [`/controls/${control.id}`, `/guide/controls/${control.id}`]),
       ];
       const server = await createServer({

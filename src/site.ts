@@ -86,7 +86,7 @@ export function pageFor(input: string, locale: Locale = "tr"): SitePage {
   }
   const settings: Record<string, MessageKey> = {
     "/account": "account", "/account/favorites": "favorites", "/favorites": "favorites",
-    "/account/appearance": "appearance", "/account/language": "language", "/search": "searchTitle",
+    "/account/appearance": "appearance", "/account/reduce-motion": "reduceMotion", "/account/language": "language", "/search": "searchTitle",
   };
   if (settings[path]) return page("private", t[settings[path]], {
     canonicalPath: path === "/favorites" ? "/account/favorites" : path, imageKey: "home",

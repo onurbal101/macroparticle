@@ -1841,13 +1841,20 @@ button.select-key:active {
     clip-path: inset(50%);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+:root[data-reduce-motion="on"] {
+  &, & *, & *::before, & *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduce-motion="off"]) {
+    &, & *, & *::before, & *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
