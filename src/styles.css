@@ -364,9 +364,10 @@ p {
   color: light-dark(#9a6700, #edbf62);
 }
 .floating-dock {
+  --dock-edge: 20px;
   position: fixed;
   inset-inline: max(10px, env(safe-area-inset-left)) max(28px, env(safe-area-inset-right));
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  bottom: calc(var(--dock-edge) + env(safe-area-inset-bottom));
   max-width: 1120px;
   margin-inline: auto;
   display: grid;
@@ -994,19 +995,32 @@ textarea {
   gap: 7px;
   margin-bottom: 15px;
 }
-.step-progress > span {
+.step-track {
   flex: 1;
   height: 5px;
   border-radius: 3px;
   background: var(--well);
+  overflow: hidden;
 }
-.step-progress > .done {
+.step-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
   background: var(--accent);
+  transform-origin: left;
 }
 .steps {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+.guided-steps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: clip;
+}
+.guided-steps > li:not([hidden]) {
+  grid-area: 1 / 1;
 }
 .steps .step-content {
   width: 100%;
@@ -1319,12 +1333,13 @@ button.select-key:active {
   padding: 5px 13px;
 }
 .simulation-view {
+  --simulation-dock-space: calc(106px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   height: 100dvh;
   overflow: clip;
   padding: calc(16px + env(safe-area-inset-top)) 26px
-    calc(106px + env(safe-area-inset-bottom));
+    var(--simulation-dock-space);
 }
 .simulation-view .page-heading {
   margin-bottom: 12px;
@@ -1668,7 +1683,7 @@ button.select-key:active {
 @media (max-width: 680px) {
   .simulation-explorer {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(min-content, 1fr) minmax(0, auto);
+    grid-template-rows: minmax(min-content, 1.7fr) minmax(0, 1fr);
     gap: 10px;
   }
   .simulation-explorer .control-panel {
@@ -1679,7 +1694,9 @@ button.select-key:active {
     height: 33px;
   }
   .simulation-explorer .control-detail {
-    max-height: clamp(45px, calc(100dvh - 540px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 230px);
+    height: calc(100% + var(--simulation-dock-space));
+    max-height: none;
+    padding-block-end: calc(17px + var(--simulation-dock-space));
   }
 }
 @media (max-width: 740px) {
@@ -1694,19 +1711,16 @@ button.select-key:active {
     grid-column: 2;
   }
 }
-@media (max-width: 600px) {
-  .main-nav {
-    padding-inline: 4px;
-  }
+@media (max-width: 740px), (hover: none) and (pointer: coarse) and (max-height: 540px) {
   .main-nav a,
   .main-nav a[href='/simulation'] {
-    flex: 1 1 auto;
-    padding-inline: 2px;
+    flex: 1 1 0;
   }
   .main-nav .tab-label {
-    font-size: 14px;
-    white-space: nowrap;
+    display: none;
   }
+}
+@media (max-width: 600px) {
   .floating-search {
     width: 52px;
     height: 52px;
@@ -1779,9 +1793,6 @@ button.select-key:active {
   .floating-dock {
     gap: 10px;
   }
-  .main-nav .tab-label {
-    font-size: 13px;
-  }
 }
 @media (max-width: 350px) {
   .page-view {
@@ -1794,9 +1805,6 @@ button.select-key:active {
   .floating-search {
     width: 44px;
     height: 44px;
-  }
-  .main-nav a[href] {
-    padding-inline: 1px;
   }
   .record-name {
     font-size: 18px;
@@ -1815,8 +1823,9 @@ button.select-key:active {
 }
 @media (max-width: 600px) {
   .page-view.simulation-view {
+    --simulation-dock-space: calc(104px + env(safe-area-inset-bottom));
     padding: calc(13px + env(safe-area-inset-top)) 14px
-      calc(104px + env(safe-area-inset-bottom));
+      var(--simulation-dock-space);
   }
   .search-toolbar:has(.favorite-mode-button) {
     gap: 6px;
@@ -1853,15 +1862,16 @@ button.select-key:active {
     font-size: 14px;
   }
   .control-detail {
-    padding: 8px 13px;
+    padding-block-start: 8px;
+    padding-inline: 13px;
   }
 }
 @media (max-height: 540px) {
   .page-view.simulation-view {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    --simulation-dock-space: calc(72px + env(safe-area-inset-bottom));
   }
   .app-shell:has(.simulation-view) .floating-dock {
-    bottom: calc(8px + env(safe-area-inset-bottom));
+    --dock-edge: 8px;
   }
   .app-shell:has(.simulation-view) .main-nav {
     min-height: 56px;
@@ -1892,7 +1902,7 @@ button.select-key:active {
 @media (max-height: 520px) and (min-width: 540px) {
   .page-view.simulation-view {
     padding: calc(8px + env(safe-area-inset-top)) 14px
-      calc(72px + env(safe-area-inset-bottom));
+      var(--simulation-dock-space);
   }
   .simulation-view .page-heading {
     margin-bottom: 7px;
@@ -1958,6 +1968,8 @@ button.select-key:active {
   }
   .simulation-explorer .control-detail {
     max-height: 100%;
+    height: auto;
+    padding-block-end: 17px;
   }
   .app-shell:has(.simulation-view) .floating-search {
     width: 48px;
@@ -1974,6 +1986,13 @@ button.select-key:active {
 @media (max-height: 540px) {
   .simulation-view .page-heading-actions {
     margin-inline-start: auto;
+  }
+}
+@media (display-mode: standalone) and (max-width: 740px),
+  (display-mode: standalone) and (hover: none) and (pointer: coarse) and (max-height: 540px) {
+  .floating-dock,
+  .app-shell:has(.simulation-view) .floating-dock {
+    --dock-edge: 6px;
   }
 }
 :root[data-reduce-motion="on"] {

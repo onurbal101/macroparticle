@@ -19,6 +19,7 @@ import {
   domAnimation,
   AnimatePresence,
   m as motion,
+  useIsPresent,
   useReducedMotionConfig,
 } from "motion/react";
 import {
@@ -1036,10 +1037,40 @@ function RecordPage() {
   );
 }
 
+const stepMotion = { duration: 0.22, ease: "easeInOut" } as const;
+const stepSlide = {
+  enter: (direction: number) => ({ x: `${direction * 100}%` }),
+  center: { x: "0%" },
+  exit: (direction: number) => ({ x: `${-direction * 100}%` }),
+};
+
+function GuidedStep({ step, direction, children }: {
+  step: number; direction: number; children: ReactNode;
+}) {
+  const present = useIsPresent();
+  return (
+    <motion.li
+      value={step + 1}
+      aria-current={present ? "step" : undefined}
+      aria-hidden={present ? undefined : true}
+      variants={stepSlide}
+      custom={direction}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={stepMotion}
+    >
+      {children}
+    </motion.li>
+  );
+}
+
 function Instruction({ record }: { record: ApplianceRecord }) {
   const { t, locale, preferences, change } = useApp();
-  const [step, setStep] = useState(0);
+  const [{ step, direction }, setStep] = useState({ step: 0, direction: 1 });
   const [compact, setCompact] = useState(false);
+  const reducedMotion = useReducedMotionConfig();
+  const slide = !compact && !reducedMotion;
   const [power, setPower] = useState("800");
   const [duration, setDuration] = useState(
     record.manualSettings
@@ -1080,6 +1111,21 @@ function Instruction({ record }: { record: ApplianceRecord }) {
   const actions = guidedActions(record);
   const active = actions[step]?.control;
   const heading = record.title[locale];
+  const stepContents = actions.map((action, index) => (
+    <div className="step-content">
+      {compact && <span className="step-number" aria-hidden="true">{index + 1}</span>}
+      <span>
+        <strong>{instructionText(action, locale, parameters)}</strong>
+        {action.display && (
+          <span className="display-value">{t("display")} · {action.display}</span>
+        )}
+        {action.type === "rotate_dial_to" && record.function === "healthy-steam" &&
+          action.value === record.groupCode && (
+            <small>{t("group")} {record.groupCode} · {t(record.groupCode === "1" ? "healthy" : "asian")}</small>
+          )}
+      </span>
+    </div>
+  ));
   return (
     <>
       <header className="instruction-header">
@@ -1199,42 +1245,32 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                 aria-hidden="true"
               >
                 {actions.map((_, index) => (
-                  <span key={index} className={index <= step ? "done" : ""} />
+                  <span className="step-track" key={index}>
+                    <motion.span
+                      className="step-fill"
+                      initial={false}
+                      animate={{ scaleX: index <= step ? 1 : 0 }}
+                      transition={reducedMotion ? { duration: 0 } : stepMotion}
+                    />
+                  </span>
                 ))}
               </div>
-              <ol className={`steps ${compact ? "compact-steps" : ""}`} role="list">
-                {actions.map(
-                  (action, index) =>
-                    (
-                      <li key={index} value={index + 1} hidden={!compact && index !== step} aria-current={index === step ? "step" : undefined}>
-                        <div className="step-content">
-                          {compact && <span className="step-number" aria-hidden="true">{index + 1}</span>}
-                          <span>
-                            <strong>
-                              {instructionText(action, locale, parameters)}
-                            </strong>
-                            {action.display && (
-                              <span className="display-value">
-                                {t("display")} · {action.display}
-                              </span>
-                            )}
-                            {action.type === "rotate_dial_to" &&
-                              record.function === "healthy-steam" &&
-                              action.value === record.groupCode && (
-                                <small>
-                                  {t("group")} {record.groupCode} ·{" "}
-                                  {t(
-                                    record.groupCode === "1"
-                                      ? "healthy"
-                                      : "asian",
-                                  )}
-                                </small>
-                              )}
-                          </span>
-                        </div>
-                      </li>
-                    ),
+              <ol className={`steps ${compact ? "compact-steps" : "guided-steps"}`} role="list">
+                {slide && (
+                  <AnimatePresence initial={false} custom={direction}>
+                    <GuidedStep key={step} step={step} direction={direction}>
+                      {stepContents[step]}
+                    </GuidedStep>
+                  </AnimatePresence>
                 )}
+                {stepContents.map((content, index) => (
+                  slide && index === step ? null : (
+                    <li key={index} value={index + 1} hidden={!compact && index !== step}
+                      aria-current={index === step ? "step" : undefined}>
+                      {content}
+                    </li>
+                  )
+                ))}
               </ol>
               <Disclosure
                 className="mobile-step-panel"
@@ -1251,7 +1287,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                 <button
                   className="secondary-button"
                   disabled={step === 0}
-                  onClick={() => setStep(step - 1)}
+                  onClick={() => setStep({ step: step - 1, direction: -1 })}
                 >
                   <ArrowLeft size={16} aria-hidden="true" />
                   {t("previous")}
@@ -1263,7 +1299,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                     (!validWarmDuration &&
                       actions[step]?.type === "set_duration")
                   }
-                  onClick={() => setStep(step + 1)}
+                  onClick={() => setStep({ step: step + 1, direction: 1 })}
                 >
                   {t("next")}
                   <ArrowRight size={16} aria-hidden="true" />

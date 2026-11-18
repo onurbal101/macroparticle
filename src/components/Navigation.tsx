@@ -71,6 +71,7 @@ export const Navigation = memo(function Navigation({ section, locale, onNavigate
         />
         {tabs.map(({ path, key, icon: Icon }) => (
           <a key={key} href={path} className={section === key ? "active" : ""}
+            aria-label={t[key]}
             aria-current={section === key ? "page" : undefined}
             onClick={event => {
               if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
