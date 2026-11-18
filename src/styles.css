@@ -375,8 +375,9 @@ p {
   color: light-dark(#9a6700, #edbf62);
 }
 .floating-dock {
+  --dock-side-inset: 28px;
   position: fixed;
-  inset-inline: max(10px, env(safe-area-inset-left)) max(28px, env(safe-area-inset-right));
+  inset-inline: max(10px, env(safe-area-inset-left)) max(var(--dock-side-inset), env(safe-area-inset-right));
   bottom: var(--dock-bottom);
   max-width: 1120px;
   margin-inline: auto;
@@ -1748,6 +1749,7 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
 }
 @media (max-width: 740px) {
   .floating-dock {
+    inset-inline-start: max(var(--dock-side-inset), env(safe-area-inset-left));
     grid-template-columns: minmax(0, 1fr) auto;
     gap: clamp(13px, 3.7vw, 24px);
   }
@@ -1844,13 +1846,16 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
   .floating-dock {
     gap: 10px;
   }
+  .main-nav {
+    padding-inline: 4px;
+  }
 }
 @media (max-width: 350px) {
   .page-view {
     padding-inline: 16px;
   }
   .floating-dock {
-    inset-inline: max(5px, env(safe-area-inset-left)) max(15px, env(safe-area-inset-right));
+    --dock-side-inset: 15px;
     gap: 9px;
   }
   .app-shell {
