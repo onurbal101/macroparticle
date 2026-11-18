@@ -488,28 +488,34 @@ p {
   overscroll-behavior: contain;
 }
 .search-sheet::backdrop {
+  background: transparent;
+  overscroll-behavior: contain;
+}
+/* Keep the blur visible briefly after the native dialog leaves the top layer. */
+.search-backdrop {
+  --fade-duration: 160ms;
+  position: fixed;
+  inset: 0;
+  z-index: 41;
   background: #10142033;
   -webkit-backdrop-filter: blur(7px);
   backdrop-filter: blur(7px);
-  overflow: hidden;
-  overscroll-behavior: contain;
+  pointer-events: none;
+  visibility: hidden;
   opacity: 0;
   transition:
-    opacity 200ms,
-    display 200ms,
-    overlay 200ms;
-  transition-behavior: allow-discrete;
+    opacity var(--fade-duration) ease-out,
+    visibility 0s var(--fade-duration);
 }
-.search-sheet[open]::backdrop {
+.search-backdrop:has(+ .search-sheet[open]) {
+  visibility: visible;
   opacity: 1;
+  transition-delay: 0s;
 }
 @starting-style {
   .search-sheet[open] {
     opacity: 0;
     transform: translateY(24px) scale(0.98);
-  }
-  .search-sheet[open]::backdrop {
-    opacity: 0;
   }
 }
 .search-toolbar {

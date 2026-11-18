@@ -525,6 +525,7 @@ export default function App() {
               onNavigate={selectTab}
               onSearch={openSearch}
             />
+            <div className="search-backdrop" aria-hidden="true" />
             <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
             <UpdateNotice />
           </div>
