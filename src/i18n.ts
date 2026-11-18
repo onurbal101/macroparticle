@@ -15,6 +15,7 @@ export const messages = {
     system: "Sistem",
     currentSetting: "Şu an",
     language: "Dil",
+    modelSetting: "Model",
     navigation: "Ana gezinme",
     searchShort: "Ara",
     cancel: "Vazgeç",
@@ -187,7 +188,7 @@ export const messages = {
     group: "Grup",
     foodCode: "Yiyecek kodu",
     healthy: "Sağlıklı",
-    asian: "Asya özellikleri",
+    asian: "Asya tarifleri",
   },
   en: {
     brand: "Microwave Companion",
@@ -205,6 +206,7 @@ export const messages = {
     system: "System",
     currentSetting: "Now",
     language: "Language",
+    modelSetting: "Model",
     navigation: "Main navigation",
     searchShort: "Search",
     cancel: "Cancel",
@@ -379,7 +381,7 @@ export const messages = {
     group: "Group",
     foodCode: "Food code",
     healthy: "Healthy",
-    asian: "Asian features",
+    asian: "Asian recipes",
   },
 } as const;
 

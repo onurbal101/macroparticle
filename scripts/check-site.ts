@@ -41,7 +41,7 @@ for (let offset = 0; offset < pages.length; offset += 5) {
   const failures = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
   if (failures.length) throw new AggregateError(failures.map(result => result.reason), "Public page checks failed");
 }
-for (const path of ["/account", "/account/favorites", "/account/language", "/account/appearance", "/account/reduce-motion", "/search", "/app.html"]) {
+for (const path of ["/account", "/account/favorites", "/account/language", "/account/appearance", "/account/reduce-motion", "/account/model", "/search", "/app.html"]) {
   const response = await fetch(base + path, { signal: AbortSignal.timeout(15000) });
   assert.equal(response.status, 200, path);
   assert.match(response.headers.get("x-robots-tag") ?? "", /noindex/, path);

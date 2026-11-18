@@ -26,7 +26,7 @@ test("task navigation, steam hierarchy, discrete portions and highlighted contro
     .getByRole("link", { name: "Buharda pişir" })
     .click();
   await expect(page.getByRole("heading", { name: "1 · Sağlıklı" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "2 · Asya özellikleri" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "2 · Asya tarifleri" })).toBeVisible();
   await page
     .getByRole("heading", { name: "Brokoli parçacıkları", exact: true })
     .click();

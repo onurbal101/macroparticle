@@ -28,7 +28,7 @@ describe("public page details", () => {
   });
 
   it("keeps settings, search and unknown pages out of indexes", () => {
-    for (const path of ["/account", "/account/favorites", "/account/language", "/search?q=private", "/programs/missing", "/functions/missing", "/simulation/missing"]) {
+    for (const path of ["/account", "/account/favorites", "/account/language", "/account/model", "/search?q=private", "/programs/missing", "/functions/missing", "/simulation/missing"]) {
       const page = pageFor(path);
       expect(page.indexable, path).toBe(false);
       expect(metadataFor(page).find(([, key]) => key === "robots")?.[2]).toBe("noindex, follow");

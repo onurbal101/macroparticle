@@ -301,6 +301,7 @@ function AnimatedRoutes({ location, pageScroll }: {
         <Route path="/account/appearance" element={<AppearanceSettings />} />
         <Route path="/account/reduce-motion" element={<MotionSettings />} />
         <Route path="/account/language" element={<LanguageSettings />} />
+        <Route path="/account/model" element={<ModelSettings />} />
         <Route
           path="/favorites"
           element={<Navigate to="/account/favorites" replace />}
@@ -958,6 +959,7 @@ function Account() {
         <SettingsLink to="/account/favorites" label={t("favorites")} icon={Star} color="gold" />
       </ul>
       <ul className="menu-list settings-list" role="list">
+        <SettingsLink to="/account/model" label={t("modelSetting")} icon={Microwave} color="blue" />
         <SettingsLink to="/account/appearance" label={t("appearance")} value={t(preferences.theme)} icon={Monitor} color="indigo" />
         <SettingsLink to="/account/reduce-motion" label={t("reduceMotion")} value={t(motionLabels[preferences.reduceMotion])} icon={PersonStanding} color="indigo" />
         <SettingsLink to="/account/language" label={t("language")} value={languageNames[locale]} icon={Languages} color="blue" />
@@ -1055,6 +1057,27 @@ function LanguageSettings() {
               </label>
             </li>
           ))}
+        </ul>
+      </fieldset>
+    </div>
+  );
+}
+
+function ModelSettings() {
+  const { t } = useApp();
+  return (
+    <div className="account-settings">
+      <MenuBack fallback="/account" />
+      <PageHeading title={t("modelSetting")} />
+      <fieldset aria-label={t("modelSetting")}>
+        <ul className="menu-list settings-list" role="list">
+          <li>
+            <label className="settings-choice">
+              <input className="sr-only" type="radio" name="model" defaultChecked />
+              <span>{t("model")}</span>
+              <Check size={21} strokeWidth={2.5} aria-hidden="true" />
+            </label>
+          </li>
         </ul>
       </fieldset>
     </div>
