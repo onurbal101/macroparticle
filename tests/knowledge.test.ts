@@ -180,6 +180,15 @@ describe("provenance and runtime validation", () => {
       sequence: [],
     });
   });
+  it.each([
+    ["6", "6’yı"], ["7", "7’yi"], ["15", "15’i"],
+    ["19", "19’u"], ["20", "20’yi"], ["1-10", "1-10’u"],
+    ["800 W", "800 W güç seviyesini"],
+  ])("puts the Turkish selection %s before the verb", (value, selection) => {
+    const action = { type: "rotate_dial_to", control: "dial", value } as const;
+    expect(instructionText(action, "tr")).toBe(`Çevirme Düğmesini çevirerek ${selection} seç.`);
+    expect(instructionText(action, "en")).toBe(`Turn the dial to select ${value}.`);
+  });
   it("renders every action in both languages without missing parameters", () => {
     for (const record of knowledge.records) {
       for (const action of record.sequence) {

@@ -214,7 +214,6 @@ p {
 .menu-list > li {
   position: relative;
   min-width: 0;
-  transition: background-color 130ms ease-out;
 }
 .menu-list > li:not(:last-child)::after {
   content: "";
@@ -235,8 +234,13 @@ p {
 .menu-list > li:only-child {
   border-radius: 21px;
 }
-.menu-list > li:is(:active, :has(> [data-touch-pressed])) {
+.menu-list > li:has(> [data-touch-pressed]) {
   background: var(--pressed);
+}
+@media (hover: hover) and (pointer: fine) {
+  .menu-list > li:active {
+    background: var(--pressed);
+  }
 }
 .task-row {
   display: flex;
@@ -1101,6 +1105,10 @@ textarea {
   font-weight: 500;
   font-size: 22px;
   line-height: 1.55;
+}
+.control-name {
+  color: light-dark(#5640b8, var(--accent));
+  font-weight: 650;
 }
 .steps small,
 .display-value {

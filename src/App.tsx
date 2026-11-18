@@ -13,6 +13,7 @@ import {
   type RefObject,
 } from "react";
 import { useTouchControls } from "./useTouchControls";
+import { ControlNames } from "./components/ControlNames";
 import { flushSync } from "react-dom";
 import {
   MotionConfig,
@@ -131,11 +132,27 @@ function sectionFor(location: RouterLocation): Section {
   return "programs";
 }
 
-function Link({ state, ...props }: LinkProps) {
+function Link({ state, onClick, ...props }: LinkProps) {
   const location = useLocation();
   return (
     <RouterLink
       {...props}
+      onClick={event => {
+        onClick?.(event);
+        const link = event.currentTarget;
+        const pointer = "pointerType" in event.nativeEvent ? event.nativeEvent.pointerType : undefined;
+        const touch = pointer === "touch" || pointer === "pen" ||
+          (!pointer && matchMedia("(pointer: coarse)").matches);
+        if (!touch || !event.detail || event.defaultPrevented || event.button !== 0 ||
+            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
+            (link.target && link.target !== "_self") || props.reloadDocument ||
+            !link.parentElement?.matches(".menu-list > li")) return;
+        event.preventDefault();
+        // Paint the released row before WebKit records the previous page for Back.
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (link.isConnected && (window.history.state?.key ?? "default") === location.key) link.click();
+        }));
+      }}
       state={{
         tab: sectionFor(location),
         ...state,
@@ -1200,7 +1217,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
     <div className="step-content">
       {compact && <span className="step-number" aria-hidden="true">{index + 1}</span>}
       <span>
-        <strong>{instructionText(action, locale, parameters)}</strong>
+        <strong><ControlNames text={instructionText(action, locale, parameters)} /></strong>
         {action.display && (
           <span className="display-value">{t("display")} · {action.display}</span>
         )}
@@ -1304,7 +1321,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                 {t("caution")}
               </h2>
               {record.warnings.map((text, index) => (
-                <p key={index}>{text[locale]}</p>
+                <p key={index}><ControlNames text={text[locale]} /></p>
               ))}
             </section>
           )}
@@ -1407,7 +1424,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
                 </p>
               )}
               {record.after.map((text, index) => (
-                <p key={index}>{text[locale]}</p>
+                <p key={index}><ControlNames text={text[locale]} /></p>
               ))}
               {record.automatic && (
                 <Link className="text-link" to="/programs/completion">

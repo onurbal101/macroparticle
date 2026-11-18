@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { quantityText, type ApplianceRecord, type Locale } from "../data/schema";
 import { messages } from "../i18n";
+import { ControlNames } from "./ControlNames";
 
 export function ProgrammeInformation({ record, locale, embedded = false, children }: {
   record: ApplianceRecord;
@@ -37,7 +38,7 @@ export function ProgrammeInformation({ record, locale, embedded = false, childre
       )}
       {record.preparation.length > 0 && (
         <ul className="preparation-list">
-          {record.preparation.map((text, index) => <li key={index}>{text[locale]}</li>)}
+          {record.preparation.map((text, index) => <li key={index}><ControlNames text={text[locale]} /></li>)}
         </ul>
       )}
       {children}
