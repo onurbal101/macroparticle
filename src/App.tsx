@@ -959,7 +959,7 @@ function Account() {
         <SettingsLink to="/account/favorites" label={t("favorites")} icon={Star} color="gold" />
       </ul>
       <ul className="menu-list settings-list" role="list">
-        <SettingsLink to="/account/model" label={t("modelSetting")} icon={Microwave} color="blue" />
+        <SettingsLink to="/account/model" label={t("modelSetting")} value={knowledge.model} icon={Microwave} color="blue" />
         <SettingsLink to="/account/appearance" label={t("appearance")} value={t(preferences.theme)} icon={Monitor} color="indigo" />
         <SettingsLink to="/account/reduce-motion" label={t("reduceMotion")} value={t(motionLabels[preferences.reduceMotion])} icon={PersonStanding} color="indigo" />
         <SettingsLink to="/account/language" label={t("language")} value={languageNames[locale]} icon={Languages} color="blue" />
