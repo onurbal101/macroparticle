@@ -890,26 +890,19 @@ textarea {
   font-size: 18px;
 }
 .safety-notice {
-  border: 1px solid var(--warning-border);
+  border-color: var(--warning-border);
   background: var(--warning-surface);
-  border-radius: 12px;
-  padding: 23px 26px;
-  margin-bottom: 22px;
+  color: var(--warning-ink);
+  padding-block: 23px;
 }
 .safety-notice h2 {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 20px;
-  color: var(--warning-ink);
 }
 .safety-notice p {
-  font-size: 18px;
-  color: var(--warning-ink);
   margin-bottom: 15px;
-}
-.safety-notice p:last-child {
-  margin-bottom: 0;
 }
 .section-heading {
   display: flex;
@@ -1613,9 +1606,6 @@ button.select-key:active {
     font-size: 3.2rem;
   }
   .surface {
-    padding: 22px;
-  }
-  .safety-notice {
     padding: 22px;
   }
   .section-heading h2 {

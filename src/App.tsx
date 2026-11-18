@@ -1126,7 +1126,7 @@ function Instruction({ record }: { record: ApplianceRecord }) {
             )}
           </ProgrammeInformation>
           {record.warnings.length > 0 && (
-            <section className="safety-notice">
+            <section className="surface safety-notice">
               <h2>
                 <ShieldCheck size={19} aria-hidden="true" />
                 {t("caution")}
