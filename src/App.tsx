@@ -317,8 +317,9 @@ function SearchSheet({
     const viewport = window.visualViewport;
     const sheet = dialog.current;
     const bar = toolbar.current;
+    const pane = resultPane.current;
     const content = resultContent.current;
-    if (!searchOpen || !sheet || !bar || !content) return;
+    if (!searchOpen || !sheet || !bar || !pane || !content) return;
     const measureResults = () => {
       const style = getComputedStyle(sheet);
       const insets = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) +
@@ -345,11 +346,39 @@ function SearchSheet({
     window.addEventListener("resize", updatePosition);
     viewport?.addEventListener("resize", updatePosition);
     viewport?.addEventListener("scroll", updatePosition);
+
+    // Older WebKit releases can scroll the page through a non-scrolling modal.
+    let touchY = 0;
+    const guardScroll = (event: TouchEvent | WheelEvent, delta: number) => {
+      if (!event.cancelable || !delta) return;
+      const inResults = event.target instanceof Node && pane.contains(event.target);
+      const canScroll = delta < 0 ? pane.scrollTop > 0 :
+        pane.scrollTop + pane.clientHeight < pane.scrollHeight - 1;
+      if (!inResults || !canScroll) event.preventDefault();
+    };
+    const onTouchStart = (event: TouchEvent) => {
+      touchY = event.touches[0].clientY;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return;
+      const nextY = event.touches[0].clientY;
+      guardScroll(event, touchY - nextY);
+      touchY = nextY;
+    };
+    const onWheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) guardScroll(event, event.deltaY);
+    };
+    sheet.addEventListener("touchstart", onTouchStart, { passive: true });
+    sheet.addEventListener("touchmove", onTouchMove, { passive: false });
+    sheet.addEventListener("wheel", onWheel, { passive: false });
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", updatePosition);
       viewport?.removeEventListener("resize", updatePosition);
       viewport?.removeEventListener("scroll", updatePosition);
+      sheet.removeEventListener("touchstart", onTouchStart);
+      sheet.removeEventListener("touchmove", onTouchMove);
+      sheet.removeEventListener("wheel", onWheel);
     };
   }, [searchOpen, dialog]);
   useLayoutEffect(() => {

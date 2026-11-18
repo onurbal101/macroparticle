@@ -146,8 +146,10 @@ p {
 }
 /* iOS-style grouped menus and floating navigation. */
 .app-shell {
-  --dock-edge: 20px;
+  --dock-bottom: calc(20px + env(safe-area-inset-bottom));
   --dock-height: 76px;
+  --dock-padding-block: 6px;
+  --dock-search-size: 64px;
   --search-slide-duration: 300ms;
   max-width: 920px;
   margin: auto;
@@ -375,7 +377,7 @@ p {
 .floating-dock {
   position: fixed;
   inset-inline: max(10px, env(safe-area-inset-left)) max(28px, env(safe-area-inset-right));
-  bottom: calc(var(--dock-edge) + env(safe-area-inset-bottom));
+  bottom: var(--dock-bottom);
   max-width: 1120px;
   margin-inline: auto;
   display: grid;
@@ -398,7 +400,7 @@ p {
   flex: 1;
   min-width: 0;
   min-height: var(--dock-height);
-  padding: 6px;
+  padding: var(--dock-padding-block) 6px;
   border-radius: 42px;
   isolation: isolate;
 }
@@ -419,8 +421,8 @@ p {
   align-items: center;
   flex: 1;
   min-width: 0;
-  min-height: 62px;
-  gap: 3px;
+  min-height: calc(var(--dock-height) - 2 * var(--dock-padding-block) - 2px);
+  gap: var(--dock-tab-gap, 3px);
   color: var(--muted);
   border-radius: 34px;
   text-align: center;
@@ -431,6 +433,8 @@ p {
   z-index: 1;
 }
 .main-nav a > svg {
+  width: var(--dock-icon-size, 24px);
+  height: var(--dock-icon-size, 24px);
   transition: scale 130ms ease-out;
 }
 .main-nav a:is(:active, [data-touch-pressed]) > svg {
@@ -466,8 +470,8 @@ p {
   grid-column: 3;
   justify-self: end;
   pointer-events: auto;
-  width: 64px;
-  height: 64px;
+  width: var(--dock-search-size);
+  height: var(--dock-search-size);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -510,7 +514,7 @@ p {
   background: var(--background);
   color: var(--ink);
   box-shadow: 0 14px 65px #0002;
-  overflow: clip;
+  overflow: hidden;
   opacity: 0;
   transform: translateY(24px) scale(0.98);
   transition:
@@ -536,6 +540,7 @@ p {
 }
 .search-sheet::backdrop {
   background: transparent;
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 .search-backdrop {
@@ -623,6 +628,7 @@ p {
 .search-results-viewport {
   overflow-y: auto;
   overscroll-behavior: contain;
+  touch-action: pan-y pinch-zoom;
 }
 .search-results-content {
   display: flow-root;
@@ -1377,7 +1383,7 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
 }
 .simulation-view {
   --simulation-dock-space: calc(106px + env(safe-area-inset-bottom));
-  --simulation-dock-clearance: calc(var(--dock-height) + var(--dock-edge) + env(safe-area-inset-bottom) + 8px);
+  --simulation-dock-clearance: calc(max(var(--dock-height), var(--dock-search-size)) + var(--dock-bottom) + 8px);
   display: flex;
   flex-direction: column;
   height: 100dvh;
@@ -1758,13 +1764,17 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
     flex: 1 1 0;
   }
   .main-nav .tab-label {
-    display: none;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 0.625rem;
+    line-height: 1.15;
   }
 }
 @media (max-width: 600px) {
-  .floating-search {
-    width: 52px;
-    height: 52px;
+  .app-shell {
+    --dock-search-size: 52px;
   }
   .page-view {
     padding: calc(30px + env(safe-area-inset-top)) 21px
@@ -1843,9 +1853,8 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
     inset-inline: max(5px, env(safe-area-inset-left)) max(15px, env(safe-area-inset-right));
     gap: 9px;
   }
-  .floating-search {
-    width: 44px;
-    height: 44px;
+  .app-shell {
+    --dock-search-size: 44px;
   }
   .record-name {
     font-size: 18px;
@@ -1914,14 +1923,9 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
     --simulation-dock-space: calc(72px + env(safe-area-inset-bottom));
   }
   .app-shell:has(.simulation-view) {
-    --dock-edge: 8px;
+    --dock-bottom: calc(8px + env(safe-area-inset-bottom));
     --dock-height: 56px;
-  }
-  .app-shell:has(.simulation-view) .main-nav {
-    padding-block: 2px;
-  }
-  .app-shell:has(.simulation-view) .main-nav a {
-    min-height: 50px;
+    --dock-padding-block: 2px;
   }
 }
 @media (max-height: 540px) and (max-width: 539px) {
@@ -2015,9 +2019,8 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
     padding-block-end: 0;
     scroll-padding-block-end: 0;
   }
-  .app-shell:has(.simulation-view) .floating-search {
-    width: 48px;
-    height: 48px;
+  .app-shell:has(.simulation-view) {
+    --dock-search-size: 48px;
   }
 }
 @media (max-height: 350px) and (min-width: 540px) {
@@ -2036,7 +2039,11 @@ button:is(.panel-key, .dial-adjust, .select-key):is(:active, [data-touch-pressed
   (display-mode: standalone) and (hover: none) and (pointer: coarse) and (max-height: 540px) {
   .app-shell,
   .app-shell:has(.simulation-view) {
-    --dock-edge: 6px;
+    --dock-bottom: max(3px, env(safe-area-inset-bottom));
+    --dock-height: 54px;
+    --dock-padding-block: 4px;
+    --dock-icon-size: 22px;
+    --dock-tab-gap: 2px;
   }
 }
 :root[data-reduce-motion="on"] {
