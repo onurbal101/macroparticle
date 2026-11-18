@@ -758,14 +758,24 @@ p {
 .settings-link > span:nth-child(2) {
   flex-shrink: 0;
 }
-@media (max-width: 600px) {
-  .settings-link[href="/account/model"] .settings-value {
-    font-size: 0;
-  }
-  .settings-link[href="/account/model"] .settings-value::after {
-    content: "Sams. MS23K3555ES/ND";
-    font-size: 16px;
-  }
+.model-value {
+  position: relative;
+  width: max-content;
+}
+.model-full {
+  display: block;
+  width: max-content;
+}
+.model-short {
+  display: none;
+}
+.model-value[data-short] .model-full {
+  visibility: hidden;
+}
+.model-value[data-short] .model-short {
+  display: block;
+  position: absolute;
+  inset: 0;
 }
 .settings-icon {
   display: grid;

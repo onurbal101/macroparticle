@@ -931,6 +931,29 @@ function ProgramList() {
 
 const languageNames: Record<Locale, string> = { tr: "Türkçe", en: "English" };
 
+function ModelValue({ value }: { value: string }) {
+  const container = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    const measure = () => {
+      const full = element.querySelector<HTMLElement>(".model-full")!;
+      element.toggleAttribute("data-short", full.scrollWidth > element.clientWidth);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    observer.observe(element.querySelector(".model-full")!);
+    measure();
+    return () => observer.disconnect();
+  }, [value]);
+  return (
+    <span ref={container} className="settings-value model-value" aria-label={value}>
+      <span className="model-full" aria-hidden="true">{value}</span>
+      <span className="model-short" aria-hidden="true">Sams. MS23.</span>
+    </span>
+  );
+}
+
 function SettingsLink({ to, label, value, icon: Icon, color }: {
   to: string;
   label: string;
@@ -943,7 +966,7 @@ function SettingsLink({ to, label, value, icon: Icon, color }: {
       <Link className="settings-link" to={to}>
         <span className={`settings-icon ${color}`}><Icon size={20} aria-hidden="true" /></span>
         <span>{label}</span>
-        <span className="settings-value">{value}</span>
+        {to === "/account/model" && value ? <ModelValue value={value} /> : <span className="settings-value">{value}</span>}
         <ChevronRight size={20} aria-hidden="true" />
       </Link>
     </li>
