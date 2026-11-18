@@ -95,7 +95,7 @@ const subscribeToSystemMotion = (update: () => void) => {
   media.addEventListener("change", update);
   return () => media.removeEventListener("change", update);
 };
-const motionLabels = { system: "motionSystem", off: "motionOff", on: "motionOn" } as const;
+const motionLabels = { system: "system", off: "motionOff", on: "motionOn" } as const;
 const functions = [
   "quick-defrost",
   "auto-cook",
@@ -893,7 +893,7 @@ function AppearanceSettings() {
       <MenuBack fallback="/account" />
       <PageHeading title={t("appearance")} />
       <fieldset className="appearance-options" aria-label={t("appearance")}>
-        {(["light", "dark", "system"] as const).map((theme) => (
+        {(["system", "light", "dark"] as const).map((theme) => (
           <label className="appearance-option" key={theme}>
             <input
               className="sr-only"
