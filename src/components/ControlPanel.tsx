@@ -14,7 +14,7 @@ import {
   WavesVertical,
 } from "lucide-react";
 import { knowledge } from "../data/schema";
-import { motion } from "motion/react";
+import { m as motion } from "motion/react";
 import { localClock, useUtcNow } from "../time";
 import type { Locale } from "../data/schema";
 import { ChildLockKey } from "./ChildLockKey";

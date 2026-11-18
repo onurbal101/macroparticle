@@ -42,6 +42,38 @@ test("search reports results and returns focus to its button", async ({ page }) 
   await page.getByRole("button", { name: "Vazgeç", exact: true }).click();
   await expect(page).toHaveURL(/\/programs$/);
   await expect(search).toBeFocused();
+  await search.click();
+  await page.getByRole("searchbox").fill("ekmek");
+  await expect(page.getByRole("link", { name: /Ekmek/ })).toBeVisible();
+  await page.mouse.click(12, 12);
+  await expect(page).toHaveURL(/\/programs$/);
+  await expect(search).toBeFocused();
+});
+
+test("the navigation indicator moves only when the selected tab changes", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference", colorScheme: "dark" });
+  await page.goto("/programs");
+  const nav = page.getByRole("navigation");
+  const glass = nav.locator(".active-glass");
+  await expect(glass).toBeVisible();
+  await nav.evaluate(element => {
+    element.setAttribute("data-test-mutations", "0");
+    const observer = new MutationObserver(records => {
+      element.dataset.testMutations = String(Number(element.dataset.testMutations) + records.length);
+    });
+    observer.observe(element, { subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class", "aria-current"] });
+  });
+  const initial = await glass.boundingBox();
+  await page.getByRole("link", { name: "Buz çöz", exact: true }).click();
+  await page.getByRole("heading", { name: "Ekmek", exact: true }).click();
+  await page.getByRole("button", { name: "Geri", exact: true }).click();
+  await page.getByRole("button", { name: "Geri", exact: true }).click();
+  await expect(page).toHaveURL(/\/programs$/);
+  await expect(nav).toHaveAttribute("data-test-mutations", "0");
+  expect(await glass.boundingBox()).toEqual(initial);
+  await nav.getByRole("link", { name: "Rehber", exact: true }).click();
+  await expect(nav.getByRole("link", { name: "Rehber", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect.poll(async () => (await glass.boundingBox())?.x ?? 0).toBeGreaterThan(initial!.x + 40);
 });
 
 test("the full programme instructions are readable without JavaScript", async ({ browser }) => {

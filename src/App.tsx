@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useDeferredValue,
   useEffect,
@@ -12,7 +13,10 @@ import {
 } from "react";
 import {
   MotionConfig,
-  motion,
+  LazyMotion,
+  domAnimation,
+  AnimatePresence,
+  m as motion,
   useReducedMotion,
 } from "motion/react";
 import {
@@ -39,14 +43,12 @@ import {
   ExternalLink,
   WavesVertical,
   Languages,
-  List,
   Microwave,
   Monitor,
   Search as SearchIcon,
   ShieldCheck,
   Snowflake,
   Star,
-  UserRound,
   Waves,
   X,
   type LucideIcon,
@@ -68,6 +70,7 @@ import { Disclosure } from "./components/Disclosure";
 import { ControlPanel } from "./components/ControlPanel";
 import { Simulator } from "./components/Simulator";
 import { PageMetadata } from "./components/PageMetadata";
+import { Navigation, tabs, type Section } from "./components/Navigation";
 import { useSimulator } from "./simulator";
 import { formatSeconds, programmeDuration } from "./time";
 
@@ -106,17 +109,10 @@ function UpdateNotice() {
   );
 }
 
-type Section = "programs" | "guide" | "simulation" | "account";
 type NavigationState = {
   tab?: Section;
   background?: RouterLocation;
 };
-const tabs = [
-  { path: "/programs", key: "programs", icon: List },
-  { path: "/simulation", key: "simulation", icon: Microwave },
-  { path: "/guide", key: "guide", icon: BookOpen },
-  { path: "/account", key: "account", icon: UserRound },
-] as const;
 
 const isSimulator = (pathname: string) =>
   /^\/(simulation|controls|guide\/controls)(\/|$)/.test(pathname);
@@ -167,67 +163,6 @@ function MenuBack({ fallback = "/programs" }: { fallback?: string }) {
       <ChevronLeft size={25} aria-hidden="true" />
       {t("back")}
     </button>
-  );
-}
-
-function Navigation({ onSearch }: { onSearch: () => void }) {
-  const { t } = useApp();
-  const location = useLocation();
-  const section = sectionFor(location);
-  const reducedMotion = useReducedMotion();
-  return (
-    <div className="floating-dock">
-      <svg className="dock-optics" width="0" height="0" aria-hidden="true">
-        <defs>
-          <filter id="dock-refraction" x="0%" y="0%" width="100%" height="100%">
-            <feTurbulence baseFrequency="0.016 0.034" numOctaves="1" seed="7" result="ripples" />
-            <feDisplacementMap in="SourceGraphic" in2="ripples" scale="12" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-      </svg>
-      <motion.nav layoutRoot className="main-nav" aria-label={t("navigation")}>
-        {tabs.map(({ path, key, icon: Icon }) => (
-          <Link
-            key={key}
-            to={path}
-            state={{ tab: key }}
-            className={section === key ? "active" : ""}
-            aria-current={section === key ? "page" : undefined}
-            onClick={(event) => {
-              if (location.pathname.replace(/\/$/, "") === path ||
-                  (key === "programs" && location.pathname === "/") ||
-                  (key === "simulation" && isSimulator(location.pathname))) {
-                event.preventDefault();
-              }
-            }}
-          >
-            {section === key && (
-              <motion.span
-                className="active-glass"
-                layoutId="active-tab"
-                transition={
-                  reducedMotion
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 440, damping: 36, mass: 0.8 }
-                }
-                aria-hidden="true"
-              />
-            )}
-            <Icon size={24} aria-hidden="true" />
-            <span className="tab-label">{t(key)}</span>
-          </Link>
-        ))}
-      </motion.nav>
-      <button
-        className="floating-search"
-        onClick={onSearch}
-        aria-label={t("searchShort")}
-        aria-haspopup="dialog"
-        aria-controls="search-sheet"
-      >
-        <SearchIcon size={27} aria-hidden="true" />
-      </button>
-    </div>
   );
 }
 
@@ -334,6 +269,7 @@ function SearchSheet({
   const deferredQuery = useDeferredValue(query);
   const results = useMemo(() => search(deferredQuery), [deferredQuery]);
   const [editing, setEditing] = useState(false);
+  const backdropPress = useRef(false);
   const canEdit = results.some((result) => result.kind !== "control");
   const locationRef = useRef(location);
   locationRef.current = location;
@@ -365,12 +301,26 @@ function SearchSheet({
       replace: true,
       state: location.state,
     });
+  const hitsBackdrop = (event: { target: EventTarget; currentTarget: HTMLDialogElement; clientX: number; clientY: number }) => {
+    if (event.target !== event.currentTarget) return false;
+    const { left, right, top, bottom } = event.currentTarget.getBoundingClientRect();
+    return event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom;
+  };
   return (
     <dialog
       id="search-sheet"
       className="search-sheet"
+      closedby="any"
       ref={dialog}
       aria-label={t("searchShort")}
+      onPointerDown={event => {
+        if (!("closedBy" in event.currentTarget)) backdropPress.current = hitsBackdrop(event);
+      }}
+      onPointerCancel={() => { backdropPress.current = false; }}
+      onClick={event => {
+        if (backdropPress.current && hitsBackdrop(event)) event.currentTarget.close();
+        backdropPress.current = false;
+      }}
       onClose={() => {
         setEditing(false);
         if (locationRef.current.pathname !== "/search") return;
@@ -511,6 +461,23 @@ export default function App() {
   const navigate = useNavigate();
   const dialog = useRef<HTMLDialogElement>(null);
   const input = useRef<HTMLInputElement>(null);
+  const navigation = useRef({ location, navigate });
+  useLayoutEffect(() => { navigation.current = { location, navigate }; }, [location, navigate]);
+  const selectTab = useCallback((path: string, section: Section) => {
+    const { location, navigate } = navigation.current;
+    if (location.pathname.replace(/\/$/, "") === path ||
+        (section === "programs" && location.pathname === "/") ||
+        (section === "simulation" && isSimulator(location.pathname))) return;
+    navigate(path, { state: { tab: section } });
+  }, []);
+  const openSearch = useCallback(() => {
+    const { location, navigate } = navigation.current;
+    if (!dialog.current?.open) dialog.current?.showModal();
+    input.current?.focus({ preventScroll: true });
+    if (location.pathname !== "/search") navigate("/search", {
+      state: { background: location, tab: sectionFor(location) },
+    });
+  }, []);
   const restoreSearchFocus = useRef(false);
   useLayoutEffect(() => {
     if (location.pathname !== "/search" && restoreSearchFocus.current) {
@@ -535,31 +502,29 @@ export default function App() {
     >
       <PageMetadata locale={locale} />
       <MotionConfig reducedMotion="user">
-        <a className="skip-link" href="#content">
-          {t("skip")}
-        </a>
-        <div className="app-shell">
-          <main id="content" className="page-stage" tabIndex={-1}>
-            {storageError && (
-              <p className="notice" role="status">
-                {t("storageError")}
-              </p>
-            )}
-            <AnimatedRoutes location={background} />
-          </main>
-          <Navigation
-            onSearch={() => {
-              if (!dialog.current?.open) dialog.current?.showModal();
-              input.current?.focus({ preventScroll: true });
-              if (location.pathname !== "/search")
-                navigate("/search", {
-                  state: { background: location, tab: sectionFor(location) },
-                });
-            }}
-          />
-          <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
-          <UpdateNotice />
-        </div>
+        <LazyMotion features={domAnimation} strict>
+          <a className="skip-link" href="#content">
+            {t("skip")}
+          </a>
+          <div className="app-shell">
+            <main id="content" className="page-stage" tabIndex={-1}>
+              {storageError && (
+                <p className="notice" role="status">
+                  {t("storageError")}
+                </p>
+              )}
+              <AnimatedRoutes location={background} />
+            </main>
+            <Navigation
+              section={sectionFor(location)}
+              locale={locale}
+              onNavigate={selectTab}
+              onSearch={openSearch}
+            />
+            <SearchSheet dialog={dialog} input={input} onDismiss={() => { restoreSearchFocus.current = true; }} />
+            <UpdateNotice />
+          </div>
+        </LazyMotion>
       </MotionConfig>
     </Context.Provider>
   );
@@ -624,30 +589,40 @@ function Home() {
 
 function FavoriteModeButton({ editing, onToggle }: { editing: boolean; onToggle: () => void }) {
   const { t } = useApp();
+  const reducedMotion = useReducedMotion();
   return (
-    <button
+    <motion.button
       type="button"
       className="favorite-mode-button"
       aria-label={t("editFavorites")}
       aria-pressed={editing}
       onClick={onToggle}
+      whileTap={reducedMotion ? undefined : { scale: 0.94 }}
+      transition={{ duration: 0.12 }}
     >
-      <Star size={25} fill={editing ? "currentColor" : "none"} aria-hidden="true" />
-    </button>
+      <motion.span initial={false} animate={{ scale: editing && !reducedMotion ? 1.06 : 1 }} transition={{ duration: 0.12 }}>
+        <Star size={25} fill={editing ? "currentColor" : "transparent"} aria-hidden="true" />
+      </motion.span>
+    </motion.button>
   );
 }
 
 function FavoriteStar({ saved, decorative = false }: { saved: boolean; decorative?: boolean }) {
   const { t } = useApp();
+  const reducedMotion = useReducedMotion();
   return (
-    <span
+    <motion.span
       className={`favorite-star${saved ? " saved" : ""}`}
       role={decorative ? undefined : "img"}
       aria-hidden={decorative || undefined}
       aria-label={decorative ? undefined : t("favorites")}
+      initial={{ opacity: 0, scale: reducedMotion ? 1 : 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: reducedMotion ? 1 : 0.8 }}
+      transition={{ duration: reducedMotion ? 0 : 0.12, ease: "easeOut" }}
     >
-      <Star size={24} fill={saved ? "currentColor" : "none"} aria-hidden="true" />
-    </span>
+      <Star size={24} fill={saved ? "currentColor" : "transparent"} aria-hidden="true" />
+    </motion.span>
   );
 }
 
@@ -663,16 +638,19 @@ function toggleFavorite(previous: Preferences, id: string): Preferences {
 function ProgramFavorite({ id }: { id: string }) {
   const { preferences, change, t } = useApp();
   const saved = preferences.favorites.includes(id);
+  const reducedMotion = useReducedMotion();
   return (
-    <button
+    <motion.button
       type="button"
       className="favorite-mode-button program-favorite"
       aria-label={t("favorites")}
       aria-pressed={saved}
       onClick={() => change((previous) => toggleFavorite(previous, id))}
+      whileTap={reducedMotion ? undefined : { scale: 0.94 }}
+      transition={{ duration: 0.12 }}
     >
-      <Star size={25} fill={saved ? "currentColor" : "none"} aria-hidden="true" />
-    </button>
+      <Star size={25} fill={saved ? "currentColor" : "transparent"} aria-hidden="true" />
+    </motion.button>
   );
 }
 
@@ -698,7 +676,9 @@ function FavoriteRow({ id, path, className, name, editing, children }: {
           {children}
         </button>
       ) : <Link to={path}>{children}</Link>}
-      {(saved || editing) && <FavoriteStar saved={saved} decorative={editing} />}
+      <AnimatePresence initial={false}>
+        {(saved || editing) && <FavoriteStar key="star" saved={saved} decorative={editing} />}
+      </AnimatePresence>
     </li>
   );
 }

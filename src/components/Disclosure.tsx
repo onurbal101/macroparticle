@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { m as motion, useReducedMotion } from "motion/react";
 import { ChevronRight } from "lucide-react";
 
 export function Disclosure({ label, className, children }: {

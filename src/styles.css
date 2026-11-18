@@ -42,6 +42,7 @@
   box-sizing: border-box;
 }
 html {
+  scrollbar-gutter: stable;
   scroll-padding-bottom: calc(8rem + env(safe-area-inset-bottom));
 }
 body {
@@ -304,6 +305,15 @@ p {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--accent);
+  transition: background-color 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+}
+.favorite-mode-button > span {
+  display: grid;
+  place-items: center;
+}
+.favorite-mode-button svg,
+.favorite-star svg {
+  transition: fill 120ms ease-out;
 }
 .favorite-mode-button[aria-pressed="true"] {
   background: var(--accent);
@@ -330,7 +340,7 @@ p {
 }
 .floating-dock {
   position: fixed;
-  inset-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right));
+  inset-inline: max(10px, env(safe-area-inset-left)) max(28px, env(safe-area-inset-right));
   bottom: calc(20px + env(safe-area-inset-bottom));
   max-width: 1120px;
   margin-inline: auto;
@@ -398,9 +408,12 @@ p {
 .main-nav a.active {
   color: var(--accent);
 }
+.main-nav:not([data-indicator-ready="true"]) a.active {
+  background: var(--glass-active);
+}
 .active-glass {
   position: absolute;
-  inset: 1px 0;
+  left: 0;
   border-radius: 34px;
   background: var(--glass-active);
   border: 1px solid var(--glass-rim);
@@ -461,8 +474,9 @@ p {
   transition:
     opacity 180ms ease,
     transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    display 300ms allow-discrete,
-    overlay 300ms allow-discrete;
+    display 300ms,
+    overlay 300ms;
+  transition-behavior: allow-discrete;
 }
 .search-sheet[open] {
   display: flex;
@@ -482,8 +496,9 @@ p {
   opacity: 0;
   transition:
     opacity 200ms,
-    display 200ms allow-discrete,
-    overlay 200ms allow-discrete;
+    display 200ms,
+    overlay 200ms;
+  transition-behavior: allow-discrete;
 }
 .search-sheet[open]::backdrop {
   opacity: 1;
@@ -1626,12 +1641,20 @@ button.select-key:active {
     padding-inline: 12px;
   }
 }
+@media (max-width: 375px) {
+  .floating-dock {
+    gap: 10px;
+  }
+  .main-nav .tab-label {
+    font-size: 13px;
+  }
+}
 @media (max-width: 350px) {
   .page-view {
     padding-inline: 16px;
   }
   .floating-dock {
-    inset-inline: max(5px, env(safe-area-inset-left)) max(5px, env(safe-area-inset-right));
+    inset-inline: max(5px, env(safe-area-inset-left)) max(15px, env(safe-area-inset-right));
     gap: 9px;
   }
   .floating-search {
